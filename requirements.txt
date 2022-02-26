@@ -1,0 +1,4 @@
+pytorch-lightning==1.5.10
+matplotlib==3.5.1
+opencv-python
+
