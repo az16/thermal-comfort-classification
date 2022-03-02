@@ -4,9 +4,9 @@ class BaseDataset(Dataset):
     def __init__(self, split):
         self.split = split
         if split == 'train':
-            self.transform = self.training_preprocess
+            self.preprocess = self.training_preprocess
         elif split == 'val':
-            self.transform = self.validation_preprocess
+            self.preprocess = self.validation_preprocess
         else:
             raise (RuntimeError("Invalid dataset type: " + split + "\nSupported dataset types are: train, val"))
 

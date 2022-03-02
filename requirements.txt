@@ -1,4 +1,6 @@
 pytorch-lightning==1.5.10
+pytorch
+pythermalcomfort
 matplotlib==3.5.1
 opencv-python
 
