@@ -2,6 +2,7 @@
 from PIL import Image
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic
+import scipy.ndimage.interpolation as itpl
 from torch import *
 import numpy as np
 
@@ -17,11 +18,7 @@ def one_hot(sample, classes=3):
     return r
 
 def to_keypoint(sample):
-    r = np.array([x.split('~') for x in sample]).astype(np.float32) 
-    r[:,0] *= 1/1920
-    r[:,1] *= 1/1080
-    r[:,2] *= 1/5000
-    
+    r = np.array([x.split('~') for x in sample]).astype(np.float32)     
     return r
 
 def to_tensor(img):
@@ -53,7 +50,6 @@ def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
     mask = (sample < upper | sample > lower | sample > 0) 
     return mask
 
-
 # TODO: cite pythermal creators
 def pmv(p_vars, t_a, rh_a):
     tdb = t_a 
@@ -67,3 +63,38 @@ def pmv(p_vars, t_a, rh_a):
     clo = clo_dynamic(icl, met)
     
     return np.array([pmv_ppd(tdb[x], tr[x], vr[x], rh[x], met[x], clo[x])["pmv"] for x in range(p_vars.shape[0])])
+
+def rotate(angle, img, reshape=False, prefilter=False, order=0):
+    return itpl.rotate(img, angle, reshape, prefilter, order)
+
+def center_crop(img, output_size):
+    h = img.shape[0]
+    w = img.shape[1]
+    th, tw = output_size
+    i = int(round((h - th) / 2.))
+    j = int(round((w - tw) / 2.))
+    return img[i:i+h, j:j+w, :]
+
+def horizontal_flip(img, do_flip):
+    if do_flip: return np.fliplr(img)
+    else: return img 
+
+def augmentation(x, val=False):
+    n, k = x 
+    do_scale = np.random.uniform(0.0, 1.1) < 0.5
+    s = None 
+    if val:
+        if do_scale: s = -0.1
+        else: s = 0.1
+    else:
+        if do_scale: s = -1.0
+        else: s = 1.0
+     
+    params_n = np.array([0.5, 0.2, 3.0, 1.0, 1.0, 1.0]) * s
+    
+    params_k = np.ones_like(k)*(5.0*s) 
+    
+    return (n+params_n, x+params_k)
+
+
+    
