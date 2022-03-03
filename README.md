@@ -14,7 +14,7 @@ Pytorch based model for classification of thermal comfort states using a multi m
 |ambient-temp| float32|	[18.4, 32.2] | [0.0, 1.0] |	
 |relative-humidity| float32| [0.2 , 0.41]| [0.0, 1.0] |
 |emotion| int8|	[0, 5] | one-hot-encoding (classes=6) |		
-|Label| float32| [-3.0, 3.0] |	no changes |				    
+|label| float32| [-3.0, 3.0] |	no changes |				    
 
 Normalization parameters for normalized features:
 * __age__: min=0, max=100
