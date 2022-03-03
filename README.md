@@ -24,3 +24,5 @@ Normalization parameters for normalized features:
 * __wrist-temp__: min and max from data
 * __ambient-temp__: min and max from data
 * __relative-humidity__: data already in [0, 1]
+
+Data cleaning: outlier removal based on interquartil range, filtering of lines with missing values
