@@ -18,6 +18,9 @@ class BaseModel(nn.Module):
 
         self.load_state_dict(parameters)
         #pass
+    
+    def save(self, path):
+        pass
         
         
 class RegressionNet(BaseModel):
@@ -25,12 +28,23 @@ class RegressionNet(BaseModel):
         super(RegressionNet, self).__init__()
 
         """
-        Simple regression classifier as a first step to find suitable classifier type
+        Simple linear regression classifier with softmax output layer
         """
+        
+        self.input_layer = None 
+        self.lin_1 = None 
+        self.lin_2 = None 
+        self.out = None 
+        
+        self.f = None
 
     def forward(self, x):
-        #return y_hat
-        pass
+        x = self.input_layer(x)
+        x = self.f(self.lin_1(x))
+        x = self.f(self.lin_2(x))
+        y_hat = self.out(x)
+        
+        return y_hat
 
 
 
