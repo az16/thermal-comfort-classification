@@ -1,4 +1,4 @@
-pytorch-lightning==1.5.10
+pytorch-lightning==1.6.2
 pytorch
 pythermalcomfort
 matplotlib==3.5.1

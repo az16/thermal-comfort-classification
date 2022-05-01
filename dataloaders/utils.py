@@ -6,9 +6,10 @@ import scipy.ndimage.interpolation as itpl
 from torch import *
 import numpy as np
 
-
-
+    
 def rgb_loader(root, file):
+    # does not work with anything other than path parameter
+    #TODO: implement sequence loading in case of RNN dataloading
     assert os.path.exists(file), "file not found: {}".format(root + file)
     return np.asarray(Image.open(file).convert('RGB'), dtype=np.uint8)
 
@@ -94,7 +95,21 @@ def augmentation(x, val=False):
     
     params_k = np.ones_like(k)*(5.0*s) 
     
-    return (n+params_n, x+params_k)
+    if not k is None and n is None:
+        return k+params_k
+    
+    if k is None and not n is None:
+         return n+params_n
+    
+    return (n+params_n, k+params_k)
 
+def make_mask(list_of_masks):
+    
+    init = np.logical_or(list_of_masks[0], list_of_masks[1])
+    if len(list_of_masks) > 2:
+        for i in range(2,len(list_of_masks)):
+            init = np.logical_or(init,list_of_masks[i])
+    
+    return init
 
     
