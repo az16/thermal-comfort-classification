@@ -5,6 +5,7 @@ from pythermalcomfort.utilities import v_relative, clo_dynamic
 import scipy.ndimage.interpolation as itpl
 import torch
 import numpy as np
+import os
 
     
 def rgb_loader(root, file):
