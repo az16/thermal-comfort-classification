@@ -50,6 +50,8 @@ class MetricComputation(object):
         [metric.reset() for metric in self.metrics]
 
     def compute(self, pred, target):
+        print(pred.is_cuda)
+        print(target.is_cuda)
         current_values = [metric(pred, target) for metric in self.metrics]
         return current_values
 
@@ -62,7 +64,7 @@ METRICS = plf.__dict__ #pl.metrics.functional.__dict__
 METRICS['mse'] = METRICS['mean_squared_error']
 METRICS['msle'] = METRICS['mean_squared_log_error']
 METRICS['mae'] = METRICS['mean_absolute_error']
-METRICS['accuracy'] = Accuracy(top_k=1,multiclass=True)
-METRICS['precision'] = Precision(top_k=1,multiclass=True)
-METRICS['recall'] = Recall(top_k=1,multiclass=True)
-METRICS['f1-score'] = F1Score(top_k=1,multiclass=True)
+METRICS['accuracy'] = Accuracy(top_k=1,multiclass=True, num_classes=7)
+METRICS['precision'] = Precision(top_k=1,multiclass=True, num_classes=7)
+METRICS['recall'] = Recall(top_k=1,multiclass=True, num_classes=7)
+METRICS['f1-score'] = F1Score(top_k=1,multiclass=True, num_classes=7)
