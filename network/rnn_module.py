@@ -89,7 +89,9 @@ class TC_RNN_Module(pl.LightningModule):
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
-        y_hat = self(x)   
+        y_hat = self(x)
+         
+        if gpu_mode: y_hat = y_hat.cuda()  
         #print("pred: {0}:".format(y_hat))
         #print("target: {0}:".format(y))
         loss = self.criterion(y_hat, y)
@@ -103,6 +105,8 @@ class TC_RNN_Module(pl.LightningModule):
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
+        
+        if gpu_mode: y_hat = y_hat.cuda()
         loss = self.criterion(y_hat, y)
         self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_val(y_hat, y)
@@ -114,6 +118,8 @@ class TC_RNN_Module(pl.LightningModule):
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
+        
+        if gpu_mode: y_hat = y_hat.cuda()
         loss = self.criterion(y_hat, y)
         self.log("test_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_test(y_hat, y)
