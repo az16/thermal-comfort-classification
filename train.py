@@ -44,6 +44,8 @@ if __name__ == "__main__":
     if args.seed is None: # Generate random seed if none is given
         args.seed = random.randrange(4294967295) # Make sure it's logged
     pl.seed_everything(args.seed)
+    
+    # Checkpoint callback to save best model parameters
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         verbose=True,
         save_top_k=1,
@@ -96,5 +98,6 @@ if __name__ == "__main__":
         args.learning_rate = suggested_lr
         print("Suggested learning rate: ", args.learning_rate)
     else:
+        #train and test afterwards (uncomment testing if not enough data is available)
         trainer.fit(tc_module)
         trainer.test(tc_module, verbose=True)
