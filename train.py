@@ -48,7 +48,7 @@ if __name__ == "__main__":
         verbose=True,
         save_top_k=1,
         dirpath="./checkpoints/{0}".format(args.module),
-        filename='{epoch}-{validation_NLLLoss}',
+        filename='{epoch}',
         monitor='validation_NLLLoss',
         mode='min'
     )

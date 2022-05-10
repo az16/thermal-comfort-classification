@@ -11,7 +11,7 @@ from dataloaders.path import *
 from metrics import MetricLogger
 
 
-# is_cuda=False
+gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
     def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, inputs, types, gpus, *args, **kwargs):
@@ -42,7 +42,10 @@ class TC_RNN_Module(pl.LightningModule):
         sequence_size = sequence_size
         num_features = inputs
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
-        self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=0.15)
+        gpu_mode = not (gpus == 0)
+        print("Use GPU: {0}".format(gpu_mode))
+        if gpu_mode: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=0.15).cuda()
+        else: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=0.15)
         
         # if is_cuda:
         #     self.model = DepthEstimationNet(self.config).cuda()
@@ -70,6 +73,7 @@ class TC_RNN_Module(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def forward(self, x):
+        
         out = self.model(x)
 
         return out
@@ -83,7 +87,8 @@ class TC_RNN_Module(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         if batch_idx == 0: self.metric_logger.reset()
         x, y = batch
-
+        if gpu_mode: x, y = x.cuda(), y.cuda()
+        
         y_hat = self(x)   
         #print("pred: {0}:".format(y_hat))
         #print("target: {0}:".format(y))
@@ -95,6 +100,7 @@ class TC_RNN_Module(pl.LightningModule):
         if batch_idx == 0: self.metric_logger.reset()
 
         x, y = batch
+        if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
@@ -105,6 +111,7 @@ class TC_RNN_Module(pl.LightningModule):
         if batch_idx == 0: self.metric_logger.reset()
 
         x, y = batch
+        if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
         loss = self.criterion(y_hat, y)

@@ -125,7 +125,3 @@ def label2idx(label):
     idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
     return np.array(float(idx.index(label)))
     
-
-if __name__ == "__main__":
-    t = torch.randn((1,7))
-    print(t[0][6:7])
