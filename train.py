@@ -70,8 +70,8 @@ if __name__ == "__main__":
         amp_level='O2' if use_gpu else None,
         enable_model_summary=True,
         min_epochs=args.min_epochs,
-        limit_train_batches=0.005,
-        limit_val_batches=0.005,
+        # limit_train_batches=0.005,
+        # limit_val_batches=0.005,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module),
         callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
@@ -97,3 +97,4 @@ if __name__ == "__main__":
         print("Suggested learning rate: ", args.learning_rate)
     else:
         trainer.fit(tc_module)
+        trainer.test(tc_module, verbose=True)

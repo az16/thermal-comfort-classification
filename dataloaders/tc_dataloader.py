@@ -126,7 +126,7 @@ class TC_Dataloader(BaseDataset):
         and normalization to [0,1]
         """
         #set up individual data signals with appropriate type
-        self.data_frame = {}
+        self.data_frame = dict({"label" : self.data[:,32].astype(np.float32)})
         if self.use_demographic:
             self.data_frame.update({"age" : self.data[:,0].astype(np.float32),
                                     "gender" : self.data[:,1],
@@ -153,9 +153,7 @@ class TC_Dataloader(BaseDataset):
         if self.use_imgs:
             self.data_frame.update({"rgb_path" : self.data[:,16],
                                     "key_points" : to_keypoint(self.data[:,17:27])})
-        
-        self.data_frame.update({"label" : self.data[:,32].astype(np.float32)})
-        
+                
         # "age" : self.data[:,0].astype(np.float32),
         #                     "gender" : self.data[:,1],
         #                     "weight":self.data[:,2].astype(np.float32),
@@ -355,7 +353,7 @@ class TC_Dataloader(BaseDataset):
         Returns:
             int: number of rows int the dataset
         """        
-        return len(self.data_frame["age"])
+        return len(self.data_frame[list(self.data_frame.keys())[0]])
     
     
 

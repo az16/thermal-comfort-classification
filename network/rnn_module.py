@@ -88,7 +88,7 @@ class TC_RNN_Module(pl.LightningModule):
         #print("pred: {0}:".format(y_hat))
         #print("target: {0}:".format(y))
         loss = self.criterion(y_hat, y)
-        #self.log("train_{}".format("NLLLoss"), loss, prog_bar=True)
+        self.log("train_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_train(y_hat, y, loss)
 
     def validation_step(self, batch, batch_idx):
@@ -98,7 +98,7 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
-        #self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
+        self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_val(y_hat, y)
     
     def test_step(self, batch, batch_idx):
@@ -108,6 +108,6 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
-        #self.log("test_{}".format("NLLLoss"), loss, prog_bar=True)
+        self.log("test_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_test(y_hat, y)
     
