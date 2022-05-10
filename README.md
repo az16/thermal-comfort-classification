@@ -26,3 +26,6 @@ Normalization parameters for normalized features:
 * __relative-humidity__: data already in [0, 1]
 
 Data cleaning: outlier removal based on interquartil range, filtering of lines with missing values
+
+## Training Perfomance 
+Coming Soon..
