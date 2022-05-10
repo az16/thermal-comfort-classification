@@ -124,4 +124,5 @@ dmypy.json
 *.png
 
 #result folder
-results/
+tensorboard_logs/
+checkpoints/

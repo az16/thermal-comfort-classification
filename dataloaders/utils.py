@@ -3,7 +3,7 @@ from PIL import Image
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic
 import scipy.ndimage.interpolation as itpl
-from torch import *
+import torch
 import numpy as np
 
     
@@ -19,8 +19,10 @@ def one_hot(sample, classes=3):
     return r
 
 def to_keypoint(sample):
-    r = np.array([x.split('~') for x in sample]).astype(np.float32)     
-    return r
+    sample = np.char.split(sample, sep="~")
+    # r = np.array([x.split('~') for x in sample]).astype(np.float32)     
+    # return r
+    return sample
 
 def to_tensor(img):
     if img.ndim == 3:
@@ -31,6 +33,7 @@ def to_tensor(img):
     return img.float()
 
 def norm(sample, min=None, max=None):
+    # print(sample)
     if not min is None and not max:
         max = np.max(sample)
     elif not max is None and not min:
@@ -44,12 +47,18 @@ def standardize(sample):
     return (sample-np.mean(sample)/np.std(sample))
 
 def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
-    q25, q75 = np.percentile(sample, 25), np.percentile(sample, 75)
+    q25, q75 = np.percentile(sample,[25, 75])
     iqr = q75-q25 
     cutoff = iqr * cutoff_multiplier
-    lower, upper = q25-cutoff, q75-cutoff
-    mask = (sample < upper | sample > lower | sample > 0) 
-    return mask
+    lower, upper = q25-cutoff, q75+cutoff
+    mask_u = (sample <= upper)
+    mask_l = (sample >= lower) 
+    mask_z = (sample > 0) 
+    mask = np.logical_and(mask_u, mask_l)
+    return np.logical_and(mask, mask_z)
+
+def no_answer_mask(frame):
+    return (frame != "No Answer")
 
 # TODO: cite pythermal creators
 def pmv(p_vars, t_a, rh_a):
@@ -105,11 +114,18 @@ def augmentation(x, val=False):
 
 def make_mask(list_of_masks):
     
-    init = np.logical_or(list_of_masks[0], list_of_masks[1])
+    init = np.logical_and(list_of_masks[0], list_of_masks[1])
     if len(list_of_masks) > 2:
-        for i in range(2,len(list_of_masks)):
-            init = np.logical_or(init,list_of_masks[i])
+        for mask in list_of_masks:
+            init = np.logical_and(init, mask)
     
-    return init
+    return init 
 
+def label2idx(label):
+    idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
+    return np.array(float(idx.index(label)))
     
+
+if __name__ == "__main__":
+    t = torch.randn((1,7))
+    print(t[0][6:7])
