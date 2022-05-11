@@ -233,7 +233,7 @@ class TC_Dataloader(BaseDataset):
             if self.use_emotion:
                 self.data_frame.update({"emotion" : one_hot(self.data_frame["emotion"], classes=7)})
                 self.data_frame.update({"emotion-ml" : one_hot(self.data_frame["emotion-ml"], classes=6)})
-        else:
+        elif isinstance(self.preprocessing_config, dict):
             for key in ["age", "weight", "height", "bodyfat", "bodytemp", "sport", "meal", "tiredness" "heart_rate", "wrist_temp", "pce_ta", "pce_tg", "gender", "emotion", "emotion_ml"]:
                 if self.preprocessing_config[key]:
                     if key == "age": self.data_frame["age"] = norm(self.data_frame["age"], min=0, max=100)
@@ -320,13 +320,17 @@ class TC_Dataloader(BaseDataset):
             out.extend([torch.from_numpy(self.data_frame[x][index:limit]) for x in self.physiological_keys])
         
         if self.use_pmv_vars:
-            #print(self.data_frame["wrist_temp"])
+            # print(index)
+            # print(limit)
+            # for i in range(index,limit):
+            #     print(self.data_frame["wrist_temp"][i])
             out.extend([torch.from_numpy(self.data_frame[x][index:limit]) for x in self.pmv_keys])
         
         if self.use_sequence:
-            out = [torch.unsqueeze(x, dim=0) for x in out]
-            out = torch.cat(out, dim=0)
-            out = out.view(out.shape[1],out.shape[0])
+            out = [torch.unsqueeze(x, dim=1) for x in out]
+            out = torch.cat(out, dim=1)
+            #print(out)
+            #out = out.view(out.shape[1],out.shape[0])
             #print(label)
             label = label2idx(label) #only for nll loss
             #print(label)
@@ -340,7 +344,7 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
                 #print("Size after padding: {0}".format(out.shape))
-                
+            
             return out, label.type(torch.LongTensor)
     
     def __len__(self):

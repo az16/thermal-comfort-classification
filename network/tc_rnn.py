@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
-from network.computations import categoryFromOutput
+import torchmetrics
+#from network.computations import categoryFromOutput
 
 class RNN(nn.Module):
     def __init__(self, input_size, output_size, n_layers, hidden_dim, dropout=0.2):
@@ -18,13 +19,19 @@ class RNN(nn.Module):
         
     def forward(self, x):
         batch_size = x.size(0)
+        #print(x.shape)
         hidden = self.init_hidden(batch_size=batch_size)
-        lstm_out, hidden = self.lstm(x, hidden)
+        h_t, _ = self.lstm(x, hidden)
+        #h_t = h_t.view(batch_size, 1, h_t.shape[-1])
+        #h_t =  h_t.reshape(x.shape[0], -1)
+        #print(h_t.shape)
+        # print(lstm_out.shape)
         # lstm_out = lstm_out.contiguous().view(-1, self.hidden_dim)
-        out = self.dropout(lstm_out)
+        out = self.dropout(h_t)
         out = self.fc(out)
         out = self.softmax(out)
         out = out[:,-1]
+
         # out = categoryFromOutput(out)
         return out
     
@@ -37,9 +44,11 @@ class RNN(nn.Module):
 
 if __name__ == "__main__":
     input_t = torch.randn((4,10,7))
+    l = torch.IntTensor([0,1])
     rnn = RNN(input_size=7, output_size=7, n_layers=1, hidden_dim=256, dropout=0.2)
-    hidden = rnn.init_hidden(batch_size=4)
-    print(rnn(input_t, hidden)[0])
+    #acc = torchmetrics.Accuracy()
+    pred = rnn(input_t)
+    print(pred)
     #print(rnn(input_t, hidden))
    
     

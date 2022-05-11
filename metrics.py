@@ -4,10 +4,11 @@ from torchmetrics import Accuracy, F1Score, Precision, Recall
 from torchmetrics.metric import Metric
 import torchmetrics.functional as plf
 
+
 class MetricLogger(object):
-    def __init__(self, metrics, module):
+    def __init__(self, metrics, module, gpu):
         self.context = module
-        self.computer = MetricComputation(metrics)
+        self.computer = MetricComputation(metrics, gpu)
     
     def log_train(self, pred, target, loss):
         values = self.computer.compute(pred, target)
@@ -41,9 +42,10 @@ class MetricLogger(object):
         self.computer.reset()
 
 class MetricComputation(object):
-    def __init__(self, metrics):
+    def __init__(self, metrics, gpu):
         self.names = metrics
-        self.metrics = [METRICS[m] for m in metrics]
+        if gpu:self.metrics = [METRICS[m].cuda() for m in metrics]
+        else: [METRICS[m] for m in metrics]
         self.reset()
 
     def reset(self):
@@ -62,7 +64,7 @@ METRICS = plf.__dict__ #pl.metrics.functional.__dict__
 METRICS['mse'] = METRICS['mean_squared_error']
 METRICS['msle'] = METRICS['mean_squared_log_error']
 METRICS['mae'] = METRICS['mean_absolute_error']
-METRICS['accuracy'] = Accuracy(top_k=1,multiclass=True, num_classes=7).cuda()
-METRICS['precision'] = Precision(top_k=1,multiclass=True, num_classes=7).cuda()
-METRICS['recall'] = Recall(top_k=1,multiclass=True, num_classes=7).cuda()
-METRICS['f1-score'] = F1Score(top_k=1,multiclass=True, num_classes=7).cuda()
+METRICS['accuracy'] = Accuracy(top_k=1,multiclass=True, num_classes=7)
+METRICS['precision'] = Precision(top_k=1,multiclass=True, num_classes=7)
+METRICS['recall'] = Recall(top_k=1,multiclass=True, num_classes=7)
+METRICS['f1-score'] = F1Score(top_k=1,multiclass=True, num_classes=7)

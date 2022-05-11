@@ -26,8 +26,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--module', default='', help='The network module to be used for training')
-    parser.add_argument('--input_vars', type=int, default=0, help='The number of variables used for training')
+    parser.add_argument('--input_vars', type=int, default=0, help='The number of features used for training')
     parser.add_argument('--types', default=[0,0,1,1], help='The number of variables used for training')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
 
 
     args = parser.parse_args()
@@ -51,14 +52,14 @@ if __name__ == "__main__":
         save_top_k=1,
         dirpath="./checkpoints/{0}".format(args.module),
         filename='{epoch}',
-        monitor='validation_NLLLoss',
-        mode='min'
+        monitor='val_accuracy(AVG)',
+        mode='max'
     )
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
     module_dict = {"regression": None,
-                   "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.input_vars, args.types, args.gpus),
+                   "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.input_vars, args.types, args.gpus, args.dropout),
                    "cnn": None,
                    "rf":  None,
                    "custom": None,}
@@ -73,8 +74,8 @@ if __name__ == "__main__":
         amp_backend='apex',
         enable_model_summary=True,
         min_epochs=args.min_epochs,
-        # limit_train_batches=0.005,
-        # limit_val_batches=0.005,
+        # limit_train_batches=0.001,
+        # limit_val_batches=0.001,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module),
         callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
