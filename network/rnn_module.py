@@ -18,25 +18,26 @@ class TC_RNN_Module(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
+        print(gpu_mode)
         self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
         
         mask = self.convert_to_list(types)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=False, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=False, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=worker, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=False, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=worker, 
                                                 pin_memory=True)
-        self.criterion = torch.nn.NLLLoss()
+        self.criterion = torch.nn.NLLLoss(reduction='sum')
         
         
         hidden_state_size = 256
@@ -65,10 +66,10 @@ class TC_RNN_Module(pl.LightningModule):
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
         scheduler = {
             'scheduler': lr_scheduler,
-            'monitor': 'val_accuracy(AVG)'
+            'monitor': 'loss'
         }
         return [optimizer], [scheduler]
 
@@ -88,14 +89,15 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
-        if batch_idx == 0: self.metric_logger.reset()
+        if batch_idx == 0: self.metric_logger.reset(); print("reset\n\n\n\n")
         x, y = batch
+        #print(x)
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
          
         if gpu_mode: y_hat = y_hat.cuda()  
-        # print("pred: {0}:".format(y_hat))
+        # print("pred: {0}:".format(torch.squeeze(y_hat.topk(1)[1])))
         # print("target: {0}:".format(y))
         loss = self.criterion(y_hat, y)
         # print(loss)

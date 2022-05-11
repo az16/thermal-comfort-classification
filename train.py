@@ -74,8 +74,8 @@ if __name__ == "__main__":
         amp_backend='apex',
         enable_model_summary=True,
         min_epochs=args.min_epochs,
-        # limit_train_batches=0.001,
-        # limit_val_batches=0.001,
+        # limit_train_batches=0.01,
+        # limit_val_batches=0.009,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module),
         callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
