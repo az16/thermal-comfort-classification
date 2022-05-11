@@ -37,7 +37,7 @@ class TC_RNN_Module(pl.LightningModule):
                                                 shuffle=False, 
                                                 num_workers=worker, 
                                                 pin_memory=True)
-        self.criterion = torch.nn.NLLLoss(reduction='sum')
+        self.criterion = torch.nn.NLLLoss()
         
         
         hidden_state_size = 256
@@ -89,7 +89,7 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
-        if batch_idx == 0: self.metric_logger.reset(); print("reset\n\n\n\n")
+        if batch_idx == 0: self.metric_logger.reset()
         x, y = batch
         #print(x)
         if gpu_mode: x, y = x.cuda(), y.cuda()

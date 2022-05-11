@@ -15,13 +15,14 @@ class RNN(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_dim, n_layers, batch_first=True)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_dim, output_size)
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=0)
         
     def forward(self, x):
         batch_size = x.size(0)
         #print(x.shape)
         hidden = self.init_hidden(batch_size=batch_size)
-        h_t, _ = self.lstm(x, hidden)
+        h_t, _ = self.lstm(x,hidden)
+        h_t = h_t[:,-1]
         #h_t = h_t.view(batch_size, 1, h_t.shape[-1])
         #h_t =  h_t.reshape(x.shape[0], -1)
         #print(h_t.shape)
@@ -30,7 +31,7 @@ class RNN(nn.Module):
         out = self.dropout(h_t)
         out = self.fc(out)
         out = self.softmax(out)
-        out = out[:,-1]
+        # out = out[:,-1]
 
         # out = categoryFromOutput(out)
         return out
