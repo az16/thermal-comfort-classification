@@ -31,10 +31,8 @@ class RegressionNet(BaseModel):
         Simple linear regression classifier with softmax output layer
         """
         
-        self.input_layer = None 
-        self.lin_1 = None 
-        self.lin_2 = None 
-        self.out = None 
+        self.lin_1 = nn.Conv2d()
+        self.softmax = None 
         
         self.f = None
 

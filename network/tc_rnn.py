@@ -15,7 +15,7 @@ class RNN(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_dim, n_layers, batch_first=True)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_dim, output_size)
-        self.softmax = nn.LogSoftmax(dim=0)
+        #self.softmax = nn.LogSoftmax(dim=1)
         
     def forward(self, x):
         batch_size = x.size(0)
@@ -30,7 +30,7 @@ class RNN(nn.Module):
         # lstm_out = lstm_out.contiguous().view(-1, self.hidden_dim)
         out = self.dropout(h_t)
         out = self.fc(out)
-        out = self.softmax(out)
+        #out = self.softmax(out)
         # out = out[:,-1]
 
         # out = categoryFromOutput(out)

@@ -51,8 +51,8 @@ if __name__ == "__main__":
         verbose=True,
         save_top_k=1,
         dirpath="./checkpoints/{0}".format(args.module),
-        filename='{epoch}',
-        monitor='val_accuracy(AVG)',
+        filename='best-performance',
+        monitor='val_loss',
         mode='max'
     )
 

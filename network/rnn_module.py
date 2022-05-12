@@ -8,7 +8,7 @@ from torch import cuda
 from network.tc_rnn import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
-from metrics import MetricLogger
+from metrics import MetricLogger, computue_confusion_matrix
 
 
 gpu_mode=False
@@ -27,17 +27,17 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=True, 
                                                     num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=worker, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=worker, 
                                                 pin_memory=True)
-        self.criterion = torch.nn.NLLLoss()
+        self.criterion = torch.nn.CrossEntropyLoss()
         
         
         hidden_state_size = 256
@@ -47,11 +47,6 @@ class TC_RNN_Module(pl.LightningModule):
         print("Use GPU: {0}".format(gpu_mode))
         if gpu_mode: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout).cuda()
         else: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout)
-        
-        # if is_cuda:
-        #     self.model = DepthEstimationNet(self.config).cuda()
-        # else:
-        #     self.model = DepthEstimationNet(self.config)
 
     def convert_to_list(self, config_string):
         # trimmed_brackets = config_string[1:len(config_string)-1]
@@ -113,9 +108,9 @@ class TC_RNN_Module(pl.LightningModule):
         y_hat = self(x)
         
         if gpu_mode: y_hat = y_hat.cuda()
-        # loss = self.criterion(y_hat, y)
+        loss = self.criterion(y_hat, y)
         # self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
-        return self.metric_logger.log_val(y_hat, y)
+        return self.metric_logger.log_val(y_hat, y, loss)
     
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: self.metric_logger.reset()
@@ -126,7 +121,7 @@ class TC_RNN_Module(pl.LightningModule):
         y_hat = self(x)
         
         if gpu_mode: y_hat = y_hat.cuda()
-        # loss = self.criterion(y_hat, y)
+        loss = self.criterion(y_hat, y)
         # self.log("test_{}".format("NLLLoss"), loss, prog_bar=True)
-        return self.metric_logger.log_test(y_hat, y)
+        return self.metric_logger.log_test(y_hat, y, loss)
     

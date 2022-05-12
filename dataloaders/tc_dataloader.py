@@ -91,7 +91,7 @@ class TC_Dataloader(BaseDataset):
         file_names = [Path.db_root_dir("tcs")+x for x in file_names]
         print("Found {0} log files at {1}".format(len(file_names), Path.db_root_dir("tcs")))
         
-        train_limit = int(len(file_names)*0.8)
+        train_limit = int(len(file_names)*0.6)
         val_size = int((len(file_names)-train_limit)*0.5)
         val_limit = train_limit+val_size
         test_size = int(len(file_names)-val_limit)
