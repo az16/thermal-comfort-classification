@@ -1,5 +1,6 @@
 from typing_extensions import final
 from unicodedata import normalize
+from numpy import int64
 import torch
 from torchvision import transforms
 import torchmetrics.functional as plf
@@ -14,47 +15,47 @@ from metrics import MetricLogger, computue_confusion_matrix
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, inputs, types, gpus, dropout, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
-        print(gpu_mode)
         self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
         
-        mask = self.convert_to_list(types)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        mask = self.convert_to_list(cols)
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
-                                                    num_workers=worker, 
+                                                    num_workers=1, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, use_demographic=mask[0], use_imgs=mask[1], use_pmv_vars=mask[2], use_physiological=mask[3]),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=False, 
-                                                num_workers=worker, 
+                                                num_workers=1, 
                                                 pin_memory=True)
         self.criterion = torch.nn.CrossEntropyLoss()
         
         
         hidden_state_size = 256
         sequence_size = sequence_size
-        num_features = inputs
+        num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
         if gpu_mode: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout).cuda()
         else: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout)
 
     def convert_to_list(self, config_string):
-        # trimmed_brackets = config_string[1:len(config_string)-1]
-        # idxs = trimmed_brackets.split(",")
-        
-        for num in config_string:
-            num = (1 == num)
-        return config_string
+        trimmed_brackets = config_string[1:len(config_string)-1]
+        idx = trimmed_brackets.split(",")
+        r = []
+        for num in idx:
+            r.append(int(num))
+        #print(r)
+        return r
         
 
     def configure_optimizers(self):
@@ -64,7 +65,7 @@ class TC_RNN_Module(pl.LightningModule):
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
         scheduler = {
             'scheduler': lr_scheduler,
-            'monitor': 'loss'
+            'monitor': 'val_loss'
         }
         return [optimizer], [scheduler]
 
@@ -109,6 +110,7 @@ class TC_RNN_Module(pl.LightningModule):
         
         if gpu_mode: y_hat = y_hat.cuda()
         loss = self.criterion(y_hat, y)
+        
         # self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_val(y_hat, y, loss)
     

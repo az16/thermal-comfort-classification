@@ -26,8 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--module', default='', help='The network module to be used for training')
-    parser.add_argument('--input_vars', type=int, default=0, help='The number of features used for training')
-    parser.add_argument('--types', default=[0,0,1,1], help='The number of variables used for training')
+    parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
 
 
@@ -53,13 +52,13 @@ if __name__ == "__main__":
         dirpath="./checkpoints/{0}".format(args.module),
         filename='best-performance',
         monitor='val_loss',
-        mode='max'
+        mode='min'
     )
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
     module_dict = {"regression": None,
-                   "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.input_vars, args.types, args.gpus, args.dropout),
+                   "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
                    "cnn": None,
                    "rf":  None,
                    "custom": None,}

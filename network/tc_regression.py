@@ -24,25 +24,21 @@ class BaseModel(nn.Module):
         
         
 class RegressionNet(BaseModel):
-    def __init__(self, config):
+    def __init__(self, input_size):
         super(RegressionNet, self).__init__()
 
         """
-        Simple linear regression classifier with softmax output layer
+        Simple linear regression classifier without activation layer
         """
         
-        self.lin_1 = nn.Conv2d()
-        self.softmax = None 
+        self.lin_1 = nn.Linear(input_size, 1)
         
-        self.f = None
 
     def forward(self, x):
-        x = self.input_layer(x)
-        x = self.f(self.lin_1(x))
-        x = self.f(self.lin_2(x))
-        y_hat = self.out(x)
         
-        return y_hat
+        x = self.lin_1(x)
+        
+        return x
 
 
 

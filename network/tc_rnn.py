@@ -21,7 +21,7 @@ class RNN(nn.Module):
         batch_size = x.size(0)
         #print(x.shape)
         hidden = self.init_hidden(batch_size=batch_size)
-        h_t, _ = self.lstm(x,hidden)
+        h_t, _ = self.lstm(x, hidden)
         h_t = h_t[:,-1]
         #h_t = h_t.view(batch_size, 1, h_t.shape[-1])
         #h_t =  h_t.reshape(x.shape[0], -1)
