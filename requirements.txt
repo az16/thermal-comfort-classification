@@ -1,5 +1,6 @@
 pytorch-lightning==1.6.2
 pythermalcomfort
 matplotlib
+pandas
 opencv-python
 
