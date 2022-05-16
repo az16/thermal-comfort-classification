@@ -113,20 +113,20 @@ class TC_RNN_Module(pl.LightningModule):
         # self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_val(y_hat, y, loss)
     
-    def validation_epoch_end(self, outputs):
-        #print(outputs)
-        preds = torch.cat([tmp['preds'] for tmp in outputs])
-        targets = torch.cat([tmp['target'] for tmp in outputs])
-        confusion_matrix = ConfusionMatrix(num_classes=7)
-        if gpu_mode: confusion_matrix = ConfusionMatrix(num_classes=7).cuda(); preds = preds.cuda(); targets=targets.cuda()
-        matrix = confusion_matrix(preds, targets).cuda()
+    # def validation_epoch_end(self, outputs):
+    #     #print(outputs)
+    #     preds = torch.cat([tmp['preds'] for tmp in outputs])
+    #     targets = torch.cat([tmp['target'] for tmp in outputs])
+    #     confusion_matrix = ConfusionMatrix(num_classes=7)
+    #     if gpu_mode: confusion_matrix = ConfusionMatrix(num_classes=7).cuda(); preds = preds.cuda(); targets=targets.cuda()
+    #     matrix = confusion_matrix(preds, targets).cuda()
 
-        df_cm = pd.DataFrame(matrix.numpy(), index = range(7), columns=range(7))
-        plt.figure(figsize = (10,7))
-        fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
-        plt.close(fig_)
+    #     df_cm = pd.DataFrame(matrix.numpy(), index = range(7), columns=range(7))
+    #     plt.figure(figsize = (10,7))
+    #     fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
+    #     plt.close(fig_)
         
-        self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
+    #     self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
     
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: self.metric_logger.reset()
