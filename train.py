@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('--overfit', action='store_true', help='If this flag is set the network is overfit to 1 batch')
     parser.add_argument('--min_epochs', default=1, type=int, help='Minimum number of epochs.')
     parser.add_argument('--max_epochs', default=1, type=int, help='Maximum number ob epochs to train')
-    parser.add_argument('--metrics', default=['accuracy', 'precision', 'recall','f1-score'], nargs='+', help='which metrics to evaluate')
+    parser.add_argument('--metrics', default=['accuracy'], nargs='+', help='which metrics to evaluate')
     parser.add_argument('--worker', default=6, type=int, help='Number of workers for data loader')
     parser.add_argument('--find_learning_rate', action='store_true', help="Finding learning rate.")
     parser.add_argument('--detect_anomaly', action='store_true', help='Enables pytorch anomaly detection')

@@ -77,19 +77,22 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names = os.listdir(Path.db_root_dir("tcs"))
+        file_names = [] #os.listdir(Path.db_root_dir("tcs"))
+        with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
+            lines = file.readlines()
+            file_names = [line.rstrip() for line in lines]
         assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
             
         file_names = [Path.db_root_dir("tcs")+x for x in file_names]
-        print("Found {0} log files at {1}".format(len(file_names), Path.db_root_dir("tcs")))
+        print("Found {0} {1} files at {2}".format(len(file_names),self.split,Path.db_root_dir("tcs")))
         
-        train_limit = int(len(file_names)*0.6)
-        val_size = int((len(file_names)-train_limit)*0.5)
-        val_limit = train_limit+val_size
-        test_size = int(len(file_names)-val_limit)
-        if split == "training": file_names = file_names[:train_limit]; print("Using {0} files for {1}".format(train_limit, self.split))
-        elif split == "validation": file_names = file_names[train_limit:val_limit]; print("Using {0} files for {1}".format(val_size, self.split))
-        elif split == "test": file_names = file_names[val_limit:]; print("Using {0} files for {1}".format(test_size, self.split))
+        # train_limit = int(len(file_names)*0.6)
+        # val_size = int((len(file_names)-train_limit)*0.5)
+        # val_limit = train_limit+val_size
+        # test_size = int(len(file_names)-val_limit)
+        # if split == "training": file_names = file_names[:train_limit]; print("Using {0} files for {1}".format(train_limit, self.split))
+        # elif split == "validation": file_names = file_names[train_limit:val_limit]; print("Using {0} files for {1}".format(val_size, self.split))
+        # elif split == "test": file_names = file_names[val_limit:]; print("Using {0} files for {1}".format(test_size, self.split))
         
         #load .csv contents as list
         print("Loading contents..")

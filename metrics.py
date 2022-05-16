@@ -1,10 +1,11 @@
 import torch 
-import pytorch_lightning as pl
+# import torch.nn as nn
+# import pytorch_lightning as pl
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
-from torchmetrics.metric import Metric
 import torchmetrics.functional as plf
 import numpy as np 
 import cv2 
+import os
 
 
 class MetricLogger(object):
@@ -24,7 +25,9 @@ class MetricLogger(object):
 
     def log_val(self, pred, target, loss):
         values = self.computer.compute(pred, target)
-        result = {'val_loss': loss}
+        result = {'val_loss': loss,
+                  'preds': pred,
+                  'target': target}
         self.context.log("val_loss", loss, logger=True, prog_bar=True)
         for name, value in zip(self.computer.names, values):
             self.context.log("val_{}".format(name), value, logger=True, on_epoch=True)
@@ -63,10 +66,9 @@ class MetricComputation(object):
         if isinstance(metric, str): return self.metrics[self.names.index(metric)].compute()
         assert False, "metric must be str"
 
-
-def computue_confusion_matrix(pred, gt, num_classes, cell_size):
-    confmat = ConfusionMatrix(num_classes=num_classes, normalize='true')
-    matrix = confmat(pred.cpu().long(), gt.cpu().long()).numpy()
+def compute_confusion_matrix(pred, gt, num_classes=7, cell_size=50, name=None):
+    confmat = ConfusionMatrix(num_classes=num_classes)
+    matrix = confmat(pred.cpu(), gt.cpu().long()).numpy()
    
     image = np.repeat(matrix, cell_size, axis=1)
     image = np.repeat(image, cell_size, axis=0)
@@ -78,7 +80,12 @@ def computue_confusion_matrix(pred, gt, num_classes, cell_size):
             text = str(np.round(matrix[row, col]*100, 1)) + "%"
             textsize = cv2.getTextSize(text, font, 1, 2)[0]
             cv2.putText(image, text, (col * cell_size + cell_size - (cell_size + textsize[0]) // 2, row * cell_size + (cell_size + textsize[1]) // 2), font, 1, (255, 255, 255), 1, cv2.LINE_4, False)
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            
+
+    r = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.uint8)
+    latest = os.listdir("tensorboard_logs/")[-1]
+    cv2.imwrite("tensorboard_logs/{0}/{1}.jpg".format(latest, name), r)
+    return r
 
 METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
 METRICS['mse'] = METRICS['mean_squared_error']

@@ -1,15 +1,13 @@
-from typing_extensions import final
-from unicodedata import normalize
-from numpy import int64
+import pandas as pd
 import torch
-from torchvision import transforms
-import torchmetrics.functional as plf
+from torchmetrics import ConfusionMatrix
 import pytorch_lightning as pl
-from torch import cuda
 from network.tc_rnn import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
-from metrics import MetricLogger, computue_confusion_matrix
+from metrics import MetricLogger
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 gpu_mode=False
@@ -27,12 +25,12 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=True, 
                                                     num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=1, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=1, 
@@ -96,6 +94,7 @@ class TC_RNN_Module(pl.LightningModule):
         # print("pred: {0}:".format(torch.squeeze(y_hat.topk(1)[1])))
         # print("target: {0}:".format(y))
         loss = self.criterion(y_hat, y)
+        
         # print(loss)
         # self.log("train_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_train(y_hat, y, loss)
@@ -113,6 +112,20 @@ class TC_RNN_Module(pl.LightningModule):
         
         # self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
         return self.metric_logger.log_val(y_hat, y, loss)
+    
+    def validation_epoch_end(self, outputs):
+        #print(outputs)
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
+        confusion_matrix = ConfusionMatrix(num_classes=7)
+        matrix = confusion_matrix(preds, targets)
+
+        df_cm = pd.DataFrame(matrix.numpy(), index = range(7), columns=range(7))
+        plt.figure(figsize = (10,7))
+        fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
+        plt.close(fig_)
+        
+        self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
     
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: self.metric_logger.reset()
