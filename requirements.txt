@@ -3,4 +3,5 @@ pythermalcomfort
 matplotlib
 pandas
 opencv-python
+seaborn
 
