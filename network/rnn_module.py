@@ -118,6 +118,7 @@ class TC_RNN_Module(pl.LightningModule):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
         targets = torch.cat([tmp['target'] for tmp in outputs])
         confusion_matrix = ConfusionMatrix(num_classes=7)
+        if gpu_mode: confusion_matrix = confusion_matrix.cuda()
         matrix = confusion_matrix(preds, targets)
 
         df_cm = pd.DataFrame(matrix.numpy(), index = range(7), columns=range(7))
