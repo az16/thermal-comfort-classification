@@ -193,7 +193,7 @@ class TC_Dataloader(BaseDataset):
         limit = index+1
         # print(len(self.df["Label"]))
         # print(self.__len__())
-        label = np.array(self.df.iloc[index:limit, -1])
+        label = np.array(self.df.iloc[[index], -1])
         if self.use_sequence:
             #print("dataframe len: {0}".format(len(self.data_frame["age"])))
             if index+self.sequence_size < self.__len__():
@@ -206,9 +206,12 @@ class TC_Dataloader(BaseDataset):
                 if index == limit:
                     limit += 1
                     
-        out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
-        
+        out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
+        label = torch.from_numpy(label)
+        # print(out)
+        # print(label)
         if self.use_sequence:
+            out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
             #out = torch.unsqueeze(out, dim=1)
             #out = torch.cat(out, dim=1)
             label = label2idx(label)
@@ -221,10 +224,10 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
                 #print("Size after padding: {0}".format(out.shape))
-            # print(out)
-            # print(label)
-            # print(label.shape)
-            return out.type(torch.FloatTensor), label.type(torch.LongTensor)
+        # print(out)
+        # print(label)
+        # print(label.shape)
+        return out.type(torch.FloatTensor), label.type(torch.LongTensor)
     
     def __len__(self):
         """

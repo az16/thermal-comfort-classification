@@ -5,6 +5,7 @@ from dataloaders.path import Path
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
+from network.regression_module import TC_MLP_Module
 
 if __name__ == "__main__":
     
@@ -57,11 +58,11 @@ if __name__ == "__main__":
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
-    module_dict = {"regression": None,
-                   "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
-                   "cnn": None,
-                   "rf":  None,
-                   "custom": None,}
+    # module_dict = {"regression": TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
+    #                "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
+    #                "cnn": None,
+    #                "rf":  None,
+    #                "custom": None,}
 
     trainer = pl.Trainer(
         fast_dev_run=args.dev,
@@ -73,8 +74,8 @@ if __name__ == "__main__":
         amp_backend='apex',
         enable_model_summary=True,
         min_epochs=args.min_epochs,
-        # limit_train_batches=0.01,
-        # limit_val_batches=0.009,
+        # limit_train_batches=0.001,
+        # limit_val_batches=0.001,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module),
         callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
@@ -89,8 +90,12 @@ if __name__ == "__main__":
     
     # choose module with respective network architecture here based on parser argument
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
-    tc_module = module_dict[args.module]
-
+    tc_module = None 
+    if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout)
+    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout) 
+    
+    print("Using {0} lightning module.".format(args.module.upper()))
+    print(tc_module)
     if args.find_learning_rate:
         # Run learning rate finder
         lr_finder = trainer.tuner.lr_find(tc_module)

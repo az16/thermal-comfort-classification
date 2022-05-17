@@ -126,3 +126,5 @@ dmypy.json
 #result folder
 tensorboard_logs/rnn/version*/
 checkpoints/rnn/*.ckpt
+tensorboard_logs/regression/version*/
+checkpoints/regression/*.ckpt

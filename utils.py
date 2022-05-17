@@ -2,6 +2,7 @@ import glob
 import os
 import torch 
 
+label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]
 
 def categoryFromOutput(output):
     top_n, top_i = output.topk(1)

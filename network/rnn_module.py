@@ -1,11 +1,12 @@
+from multiprocessing import cpu_count
+from torchmetrics import Accuracy
 import pandas as pd
 import torch
-from torchmetrics import ConfusionMatrix
+from sklearn.metrics import *
 import pytorch_lightning as pl
-from network.tc_rnn import RNN
+from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
-from metrics import MetricLogger
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -17,34 +18,37 @@ class TC_RNN_Module(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
-        self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
+        #self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
+        self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
         self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
-                                                    num_workers=worker, 
+                                                    num_workers=cpu_count(), 
                                                     pin_memory=True)
         self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
-                                                    num_workers=1, 
+                                                    num_workers=cpu_count(), 
                                                     pin_memory=True) 
         self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=False, 
-                                                num_workers=1, 
+                                                num_workers=cpu_count(), 
                                                 pin_memory=True)
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.acc_train = Accuracy()
+        self.acc_val = Accuracy()
+        self.acc_test = Accuracy()
+        self.val_preds = []
+        self.val_labels = []
         
-        
-        hidden_state_size = 256
-        sequence_size = sequence_size
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout).cuda()
-        else: self.model = RNN(num_features, num_categories, n_layers=1, hidden_dim=hidden_state_size, dropout=dropout)
+        if gpu_mode: self.model = RNN(num_features, num_categories).cuda(); self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        else: self.model = RNN(num_features, num_categories)
 
     def convert_to_list(self, config_string):
         trimmed_brackets = config_string[1:len(config_string)-1]
@@ -55,12 +59,11 @@ class TC_RNN_Module(pl.LightningModule):
         #print(r)
         return r
         
-
     def configure_optimizers(self):
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
         scheduler = {
             'scheduler': lr_scheduler,
             'monitor': 'val_loss'
@@ -68,9 +71,7 @@ class TC_RNN_Module(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def forward(self, x):
-        
         out = self.model(x)
-
         return out
 
     def train_dataloader(self):
@@ -83,61 +84,76 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
-        if batch_idx == 0: self.metric_logger.reset()
+        if batch_idx == 0: self.acc_train.reset()
         x, y = batch
-        #print(x)
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
-         
         if gpu_mode: y_hat = y_hat.cuda()  
-        # print("pred: {0}:".format(torch.squeeze(y_hat.topk(1)[1])))
-        # print("target: {0}:".format(y))
-        loss = self.criterion(y_hat, y)
         
-        # print(loss)
-        # self.log("train_{}".format("NLLLoss"), loss, prog_bar=True)
-        return self.metric_logger.log_train(y_hat, y, loss)
+        loss = self.criterion(y_hat, y)
+        preds = torch.argmax(y_hat, dim=1)
+        self.acc_train(preds, y)
+        accuracy = self.acc_train.compute()
+        self.log("train_loss", loss, prog_bar=True, logger=True)
+        self.log("train_accuracy", accuracy, prog_bar=True, logger=True)
+        return {"loss": loss, "accuracy": accuracy}
 
     def validation_step(self, batch, batch_idx):
-        if batch_idx == 0: self.metric_logger.reset()
-
+        if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
+        if gpu_mode: y_hat = y_hat.cuda()  
         
-        if gpu_mode: y_hat = y_hat.cuda()
         loss = self.criterion(y_hat, y)
+        preds = torch.argmax(y_hat, dim=1)
+        self.acc_val(preds, y)
+        accuracy = self.acc_val.compute()
+        self.log("val_loss", loss, prog_bar=True, logger=True)
+        self.log("val_accuracy", accuracy, prog_bar=True, logger=True)
         
-        # self.log("validation_{}".format("NLLLoss"), loss, prog_bar=True)
-        return self.metric_logger.log_val(y_hat, y, loss)
-    
-    # def validation_epoch_end(self, outputs):
-    #     #print(outputs)
-    #     preds = torch.cat([tmp['preds'] for tmp in outputs])
-    #     targets = torch.cat([tmp['target'] for tmp in outputs])
-    #     confusion_matrix = ConfusionMatrix(num_classes=7)
-    #     if gpu_mode: confusion_matrix = ConfusionMatrix(num_classes=7).cuda(); preds = preds.cuda(); targets=targets.cuda()
-    #     matrix = confusion_matrix(preds, targets).cuda()
+        preds = preds.cpu()
+        y = y.cpu().long()
+        # print(self.label_names[preds[0]])
+        # print(self.label_names[y[0]])
+        self.val_preds.append(self.label_names[preds[0]])
+        self.val_labels.append(self.label_names[y[0]])
+        
+        return {"loss": loss, "accuracy": accuracy}
 
-    #     df_cm = pd.DataFrame(matrix.numpy(), index = range(7), columns=range(7))
-    #     plt.figure(figsize = (10,7))
-    #     fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
-    #     plt.close(fig_)
+    def on_validation_epoch_end(self):
+        print(self.val_labels)
+        print(self.val_preds)
+        cfm = confusion_matrix(self.val_labels, self.val_preds, labels=self.label_names)
+        #print(cfm)
+        df = pd.DataFrame(cfm, index=self.label_names, columns=self.label_names)
         
-    #     self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
+        #visualization
+        
+        m = sns.heatmap(df, annot=True, fmt="d", cmap="Blues")
+        m.set_yticklabels(m.get_yticklabels(), rotation=0, ha='right', size=10)
+        m.set_xticklabels(m.get_xticklabels(), rotation=30, ha='right', size=10)
+        plt.ylabel('Target Labels')
+        plt.xlabel('Predicted Label')
+        fig = m.get_figure()
+        #plt.close(fig)
+        self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
     
     def test_step(self, batch, batch_idx):
-        if batch_idx == 0: self.metric_logger.reset()
-
+        if batch_idx == 0: self.acc_test.reset()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)
+        if gpu_mode: y_hat = y_hat.cuda()  
         
-        if gpu_mode: y_hat = y_hat.cuda()
         loss = self.criterion(y_hat, y)
-        # self.log("test_{}".format("NLLLoss"), loss, prog_bar=True)
-        return self.metric_logger.log_test(y_hat, y, loss)
+        preds = torch.argmax(y_hat, dim=1)
+        self.acc_test(preds, y)
+        accuracy = self.acc_test.compute()
+        self.log("test_loss", loss, prog_bar=True, logger=True)
+        self.log("test_accuracy", accuracy, prog_bar=True, logger=True)
+        return {"loss": loss, "accuracy": accuracy}
     
