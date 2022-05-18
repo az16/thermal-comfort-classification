@@ -41,6 +41,27 @@ types = dict({
             "Emotion-Self" : np.float32,
             "Label" : np.float32})
 
+types_sk = dict({
+            "Age" : np.float32,
+            "Gender" : 'category',
+            "Weight": np.float32,
+            "Height": np.float32,
+            "Bodyfat:": str,
+            "Bodytemp": np.float32,
+            "Sport-Last-Hour": bool,
+            "Time-Since-Meal": np.int32,
+            "Tiredness": np.int64,
+            "Clothing-Level": np.float32,
+            "Radiation-Temp": np.float32,
+            "PCE-Ambient-Temp":np.float32,
+            "Heart_Rate" : np.float32,
+            "Wrist_Skin_Temperature" : np.float32,
+            "GSR" : np.float64,
+            "Ambient_Temperature" : np.float32,
+            "Ambient_Humidity" : np.float32,
+            "Emotion-ML" : str,
+            "Label" : np.float32})
+
 header = ["Timestamp",
           "Age",
           "Gender",
@@ -199,6 +220,13 @@ def make_mask(list_of_masks):
     
     return init 
 
+def convert_str_nominal(x):
+    i=0
+    for key in ["Male", "Female"]:
+        x.loc[(x["Gender"] == key), "Gender"] = i
+        i += 1
+    return x
+
 def convert_binary(x):
     
     return (x == 1)
@@ -273,6 +301,16 @@ params = dict({
             "Emotion-Self" : [6],
             "Label":[]})
 
+
+
+def emotion2Id(x):
+    i=0
+    for key in ["Angry", "Fear", "Disgust", "Neutral", "Surprise", "Happy", "Sad"]:
+        x.loc[(x["Emotion-ML"] == key), "Emotion-ML"] = i
+        i += 1
+    return x
+    
+
 def label2idx(label):
     idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
     try:
@@ -280,4 +318,8 @@ def label2idx(label):
     except:
         return np.array(label)
 
-    
+
+if __name__ == "__main__":
+    test = np.array([1,2,3,2,3])
+    oh = one_hot(test, classes=4)
+    print(oh)

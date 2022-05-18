@@ -1,14 +1,12 @@
 from multiprocessing import cpu_count
 from torchmetrics import Accuracy
+from metrics import compute_confusion_matrix
 import pandas as pd
 import torch
-from sklearn.metrics import *
 import pytorch_lightning as pl
 from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 gpu_mode=False
@@ -41,6 +39,8 @@ class TC_RNN_Module(pl.LightningModule):
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
+        self.train_preds = []
+        self.train_labels = []
         self.val_preds = []
         self.val_labels = []
         
@@ -84,7 +84,7 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
-        if batch_idx == 0: self.acc_train.reset()
+        if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -97,8 +97,16 @@ class TC_RNN_Module(pl.LightningModule):
         accuracy = self.acc_train.compute()
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_accuracy", accuracy, prog_bar=True, logger=True)
+        
+        preds = preds.cpu()
+        y = y.cpu().long()
+        # print(self.label_names[preds[0]])
+        # print(self.label_names[y[0]])
+        self.train_preds.append(self.label_names[preds[0]])
+        self.train_labels.append(self.label_names[y[0]])
+        
         return {"loss": loss, "accuracy": accuracy}
-
+    
     def validation_step(self, batch, batch_idx):
         if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
@@ -123,23 +131,9 @@ class TC_RNN_Module(pl.LightningModule):
         
         return {"loss": loss, "accuracy": accuracy}
 
-    def on_validation_epoch_end(self):
-        print(self.val_labels)
-        print(self.val_preds)
-        cfm = confusion_matrix(self.val_labels, self.val_preds, labels=self.label_names)
-        #print(cfm)
-        df = pd.DataFrame(cfm, index=self.label_names, columns=self.label_names)
-        
-        #visualization
-        
-        m = sns.heatmap(df, annot=True, fmt="d", cmap="Blues")
-        m.set_yticklabels(m.get_yticklabels(), rotation=0, ha='right', size=10)
-        m.set_xticklabels(m.get_xticklabels(), rotation=30, ha='right', size=10)
-        plt.ylabel('Target Labels')
-        plt.xlabel('Predicted Label')
-        fig = m.get_figure()
-        #plt.close(fig)
-        self.logger.experiment.add_figure("Confusion Matrix", fig, self.current_epoch)
+    def on__epoch_end(self):
+        compute_confusion_matrix(self.train_preds, self.train_labels, self.current_epoch, self, "Training")
+        compute_confusion_matrix(self.val_preds, self.val_labels, self.current_epoch, self, "Validation")
     
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: self.acc_test.reset()

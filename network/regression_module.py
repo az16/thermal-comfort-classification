@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 from network.learning_models import MLP
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
-from metrics import MetricLogger
+from metrics import MetricLogger, rmse, mae
 from multiprocessing import cpu_count
 
 
@@ -83,11 +83,13 @@ class TC_MLP_Module(pl.LightningModule):
         y_hat = self(x)
         #print(y_hat)
         if gpu_mode: y_hat = y_hat.cuda()  
-       
-        loss = self.criterion(y_hat,  torch.squeeze(y).float())
+        y = torch.squeeze(y).float()
+        loss = self.criterion(y_hat,  y)
         
         # print(loss)
         self.log("train_loss", loss, prog_bar=True, logger=True)
+        self.log("train_rmse", rmse(y_hat, y), logger=True)
+        self.log("train_mae", mae(y_hat, y), logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
@@ -98,10 +100,14 @@ class TC_MLP_Module(pl.LightningModule):
         y_hat = self(x)
         
         if gpu_mode: y_hat = y_hat.cuda()
-        loss = self.criterion(y_hat,  torch.squeeze(y).float())
+        y = torch.squeeze(y).float()
+        loss = self.criterion(y_hat,  y)
         
         self.log("val_loss", loss, prog_bar=True, logger=True)
+        self.log("val_rmse", rmse(y_hat, y), prog_bar=True, logger=True)
+        self.log("val_mae", mae(y_hat, y), prog_bar=True, logger=True)
         return {"loss": loss}
+    
     # def validation_epoch_end(self, outputs):
     #     #print(outputs)
     #     preds = torch.cat([tmp['preds'] for tmp in outputs])
@@ -125,6 +131,9 @@ class TC_MLP_Module(pl.LightningModule):
         y_hat = self(x)
         
         if gpu_mode: y_hat = y_hat.cuda()
-        loss = self.criterion(y_hat, torch.squeeze(y).float())
+        y = torch.squeeze(y).float()
+        loss = self.criterion(y_hat,  y)
         self.log("test_loss", loss, prog_bar=True, logger=True)
+        self.log("test_rmse", rmse(y_hat, y), prog_bar=True, logger=True)
+        self.log("test_mae", mae(y_hat, y), prog_bar=True, logger=True)
         return {"loss": loss}

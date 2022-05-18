@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+from sklearn.ensemble import RandomForestClassifier
 #from network.computations import categoryFromOutput
 
 class MLP(nn.Module):
@@ -59,3 +60,18 @@ class CNN(nn.Module):
 
     def forward(self, x):
         pass
+
+
+class RandomForest():
+    def __init__(self, n_estimators, max_depth=None, critirion='gini', bootstrap=True):
+        self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, criterion=critirion, bootstrap=bootstrap, verbose=10)
+    
+    def fit(self, train_inputs, train_labels):
+        print("Fitting random forest classifier to data..")
+        self.rf.fit(train_inputs, train_labels)
+    
+    def feature_importances(self):
+        return self.rf.feature_importances_
+        
+    def predict(self, x):
+        return self.rf.predict(x)

@@ -1,11 +1,17 @@
+from sklearn import metrics
 import torch 
 # import torch.nn as nn
 # import pytorch_lightning as pl
+import seaborn as sns
+import matplotlib.pyplot as plt
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
+from sklearn.metrics import accuracy_score, confusion_matrix
 import torchmetrics.functional as plf
 import numpy as np 
-import cv2 
-import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime
 
 
 class MetricLogger(object):
@@ -66,26 +72,48 @@ class MetricComputation(object):
         if isinstance(metric, str): return self.metrics[self.names.index(metric)].compute()
         assert False, "metric must be str"
 
-def compute_confusion_matrix(pred, gt, num_classes=7, cell_size=50, name=None):
-    confmat = ConfusionMatrix(num_classes=num_classes)
-    matrix = confmat(pred.cpu(), gt.cpu().long()).numpy()
-   
-    image = np.repeat(matrix, cell_size, axis=1)
-    image = np.repeat(image, cell_size, axis=0)
-    image *= 255
-    image = cv2.applyColorMap(image.astype(np.uint8), cv2.COLORMAP_HOT)
-    font = cv2.FONT_HERSHEY_COMPLEX_SMALL
-    for row in range(num_classes):
-        for col in range(num_classes):
-            text = str(np.round(matrix[row, col]*100, 1)) + "%"
-            textsize = cv2.getTextSize(text, font, 1, 2)[0]
-            cv2.putText(image, text, (col * cell_size + cell_size - (cell_size + textsize[0]) // 2, row * cell_size + (cell_size + textsize[1]) // 2), font, 1, (255, 255, 255), 1, cv2.LINE_4, False)
-            
+def compute_confusion_matrix(preds, labels, label_names, current_epoch, context, mode):
+    cfm = confusion_matrix(labels, preds, labels=label_names, normalize=True)
+    #print(cfm)
+    df = pd.DataFrame(cfm, index=label_names, columns=label_names)
 
-    r = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.uint8)
-    latest = os.listdir("tensorboard_logs/")[-1]
-    cv2.imwrite("tensorboard_logs/{0}/{1}.jpg".format(latest, name), r)
-    return r
+    #visualization
+
+    m_val = sns.heatmap(df, annot=True, fmt="d", cmap="Blues")
+    m_val.set_yticklabels(m_val.get_yticklabels(), rotation=0, ha='right', size=10)
+    m_val.set_xticklabels(m_val.get_xticklabels(), rotation=30, ha='right', size=10)
+    plt.ylabel('Target Labels')
+    plt.xlabel('Predicted Label')
+    fig = m_val.get_figure()
+    #plt.close(fig)
+    context.logger.experiment.add_figure("Confusion Matrix {0}".format(mode), fig, current_epoch)
+
+def visualize_feature_importance(feature_imp, feature_names):
+    feature_imp = pd.Series(feature_imp, index=feature_names).sort_values(ascending=False)
+    m = sns.barplot(x=feature_imp, y=feature_imp.index)
+    # Add labels to graph
+    plt.xlabel('Feature Importance Score')
+    plt.ylabel('Features')
+    plt.title("Feature Importance Visualization")
+    plt.figure(figsize=(10, 10))
+    fig = m.get_figure()
+    fig.savefig("sklearn_logs/media/{0}.png".format("test"))
+
+def accuracy_score(preds, labels):
+    return metrics.accuracy_score(labels,preds)
+
+def rmse(preds, targets):
+    B = 1
+    try: B = preds.shape[0]
+    except: pass
+    return torch.sqrt(torch.sum(torch.pow(targets-preds, 2))*(1/B))
+
+def mae(preds, targets):
+    B = 1
+    try: B = preds.shape[0]
+    except: pass
+    tmp = torch.abs(targets-preds)
+    return torch.sum(tmp)*(1/B)
 
 METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
 METRICS['mse'] = METRICS['mean_squared_error']
@@ -97,20 +125,13 @@ METRICS['recall'] = Recall(num_classes=7)
 METRICS['f1-score'] = F1Score(num_classes=7)
 
 if __name__ == "__main__":
-    preds = torch.Tensor([[1,2,3,0,5,1],
-                          [1,3,3,0,6,1],
-                          [1,1,3,0,0,1],
-                          [1,5,3,0,0,1]])
+    # preds = torch.Tensor([[1.1],
+    #                       [3.4],
+    #                       [1.9],
+    #                       [-3.7]])
     
-    #preds = torch.Tensor([2,4,2,1])
-    target = torch.IntTensor([2,4,2,1])
+    preds = torch.Tensor([2.4,-3.1,2.2,1.6])
+    target = torch.IntTensor([2.2,4.2,2.2,1.2])
     
-    acc = Accuracy()
-    prec = Precision()
-    recall = Recall() 
-    f_1 = F1Score()
-    
-    print("accuracy: {0}".format(acc(preds, target)))
-    print("precision: {0}".format(prec(preds, target)))
-    print("recall: {0}".format(recall(preds, target)))
-    print("f-1: {0}".format(f_1(preds, target)))
+    print(rmse(preds, target))
+    print((mae(preds, target)))
