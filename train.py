@@ -95,7 +95,7 @@ if __name__ == "__main__":
     elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout) 
     
     print("Using {0} lightning module.".format(args.module.upper()))
-    print(tc_module)
+    #print(tc_module)
     if args.find_learning_rate:
         # Run learning rate finder
         lr_finder = trainer.tuner.lr_find(tc_module)

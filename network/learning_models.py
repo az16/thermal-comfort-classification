@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 #from network.computations import categoryFromOutput
 
 class MLP(nn.Module):
@@ -9,15 +10,18 @@ class MLP(nn.Module):
         Simple linear regression classifier without activation layer
         """
         
-        self.lin_1 = nn.Linear(input_size, num_categories)
+        self.lin_1 = nn.Linear(input_size, 1)
         
 
     def forward(self, x):
-        b,s,f = x.size()
-        x = x.view(b, f, s)
+        #b,s,f = x.size()
+        #x = x.view(b, f, s)
+        x = torch.squeeze(x)
+        # print(x.shape)
+        # print(x)
         x = self.lin_1(x)
-        
-        return x
+        #x = x.view(b,1,f)
+        return torch.squeeze(x)
 
 class RNN(nn.Module):
     def __init__(self, in_features, num_classes, n_layers=3, hidden_dim=256, dropout=0.75):
