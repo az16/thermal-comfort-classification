@@ -18,6 +18,11 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    params_grid = {
+                 'n_estimators': [10, 20, 30, 40, 50, 60],
+                 'max_depth': [2, 4, 8, 16, 32, 64],
+                 'max_features': []}
+    
     dataset = TC_Dataloader()
     
     x_t, y_t, x_v, y_v = dataset.splits()

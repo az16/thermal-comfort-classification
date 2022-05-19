@@ -73,13 +73,14 @@ class MetricComputation(object):
         assert False, "metric must be str"
 
 def compute_confusion_matrix(preds, labels, label_names, current_epoch, context, mode):
-    cfm = confusion_matrix(labels, preds, labels=label_names, normalize=True)
+    #print(preds, labels)
+    cfm = confusion_matrix(labels, preds, labels=label_names, normalize='true')
     #print(cfm)
     df = pd.DataFrame(cfm, index=label_names, columns=label_names)
 
     #visualization
 
-    m_val = sns.heatmap(df, annot=True, fmt="d", cmap="Blues")
+    m_val = sns.heatmap(df, annot=True, fmt=".1%", cmap="Blues")
     m_val.set_yticklabels(m_val.get_yticklabels(), rotation=0, ha='right', size=10)
     m_val.set_xticklabels(m_val.get_xticklabels(), rotation=30, ha='right', size=10)
     plt.ylabel('Target Labels')

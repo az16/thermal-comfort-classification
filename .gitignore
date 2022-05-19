@@ -128,3 +128,4 @@ tensorboard_logs/rnn/version*/
 checkpoints/rnn/*.ckpt
 tensorboard_logs/regression/version*/
 checkpoints/regression/*.ckpt
+dataloaders/path.py
