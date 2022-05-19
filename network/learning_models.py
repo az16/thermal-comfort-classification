@@ -25,13 +25,13 @@ class MLP(nn.Module):
         return torch.squeeze(x)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=3, hidden_dim=256, dropout=0.75):
+    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.75):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
         
-        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, num_classes)
         
     def forward(self, x):
@@ -63,8 +63,11 @@ class CNN(nn.Module):
 
 
 class RandomForest():
-    def __init__(self, n_estimators, max_depth=None, critirion='gini', bootstrap=True):
-        self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, criterion=critirion, bootstrap=bootstrap, verbose=10)
+    def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True):
+        self.rf = RandomForestClassifier()
+        if not cv:
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", criterion=critirion, bootstrap=bootstrap, verbose=10)
+        
     
     def fit(self, train_inputs, train_labels):
         print("Fitting random forest classifier to data..")
