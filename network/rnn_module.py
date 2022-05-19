@@ -130,11 +130,13 @@ class TC_RNN_Module(pl.LightningModule):
         self.val_labels.append(self.label_names[y[0]])
         
         return {"loss": loss, "accuracy": accuracy}
-
-    def on__epoch_end(self):
-        compute_confusion_matrix(self.train_preds, self.train_labels, self.current_epoch, self, "Training")
-        compute_confusion_matrix(self.val_preds, self.val_labels, self.current_epoch, self, "Validation")
     
+    def on_train_end(self):
+        compute_confusion_matrix(self.train_preds, self.train_labels, self.current_epoch, self, "Training")
+        
+    def on_validation_end(self):
+        compute_confusion_matrix(self.val_preds, self.val_labels, self.current_epoch, self, "Validation")
+        
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: self.acc_test.reset()
         x, y = batch
