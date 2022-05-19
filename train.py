@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
-    parser.add_argument('--dropout', type=float, default=0.2, help='Model dropout rate')
+    parser.add_argument('--dropout', type=float, default=0.9, help='Model dropout rate')
 
 
     args = parser.parse_args()

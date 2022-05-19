@@ -46,7 +46,7 @@ types_sk = dict({
             "Gender" : 'category',
             "Weight": np.float32,
             "Height": np.float32,
-            "Bodyfat:": str,
+            "Bodyfat": str,
             "Bodytemp": np.float32,
             "Sport-Last-Hour": bool,
             "Time-Since-Meal": np.int32,

@@ -45,7 +45,12 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cols=["Height","Bodytemp","Radiation-Temp","PCE-Ambient-Temp", "Wrist_Skin_Temperature","GSR","Ambient_Humidity","Label"]):
+    def __init__(self, cols=[
+                            "PCE-Ambient-Temp",	
+                            "Wrist_Skin_Temperature",
+                            "GSR",
+                            "Ambient_Humidity",
+                            "Label"]):
         self.columns = cols
         self.independent = cols[:-1]
         self.dependent = cols[-1]
@@ -93,17 +98,19 @@ class TC_Dataloader():
         print("Creating data frames..")
         
         data_type_dict = dict({})
+        #print(types_sk.keys())
         for key in self.columns:
+            #print(key)
             data_type_dict.update({key: types_sk[key]})
         
         self.train_df.astype(data_type_dict)
         self.test_df.astype(data_type_dict)
         
         #shuffle
-        self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        #self.train_df = self.train_df#.sample(frac=1).reset_index(drop=True)
         # self.test_df = pd.get_dummies(self.test_df)
         
-        #self.preprocess()
+        self.preprocess()
         
         #print(self.train_df)
         self.train_X = self.train_df[self.independent]
@@ -117,8 +124,15 @@ class TC_Dataloader():
         # self.train_df = emotion2Id(self.train_df).astype({"Emotion-ML": np.int64})
         # self.test_df = emotion2Id(self.test_df).astype({"Emotion-ML": np.int64})
         #print(self.train_df.columns.values.tolist())
-        self.train_df = convert_str_nominal(self.train_df)
-        self.test_df = convert_str_nominal(self.test_df)
+        no_answer_train = self.train_df["Bodyfat"] == "No Answer"
+        no_answer_train = ~no_answer_train
+        self.train_df = self.train_df[no_answer_train]
+        no_answer_test = self.test_df["Bodyfat"] == "No Answer"
+        no_answer_test = ~no_answer_test
+        self.test_df = self.test_df[no_answer_test]
+        
+        # self.train_df = convert_str_nominal(self.train_df)
+        # self.test_df = convert_str_nominal(self.test_df)
         # print(np.array(self.train_df["Tiredness"]).dtype)
         # # self.train_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
         # # self.test_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)

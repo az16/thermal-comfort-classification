@@ -27,12 +27,13 @@ def clf_tree(x,y,label_names, name):
     # plt.figure(figsize=(20, 20))
     fig = m_val.get_figure()
     fig.savefig("sklearn_logs/media/{0}.png".format(name))
+    plt.close(fig)
 
 if __name__ == "__main__":
     
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
-    parser.add_argument('--estimators', default=100, type=int, help='Number of estimators.')
+    parser.add_argument('--estimators', default=500, type=int, help='Number of estimators.')
     parser.add_argument('--depth', default=32, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
