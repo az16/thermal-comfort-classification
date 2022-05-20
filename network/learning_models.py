@@ -25,7 +25,7 @@ class MLP(nn.Module):
         return torch.squeeze(x)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=3, hidden_dim=256, dropout=0.75):
+    def __init__(self, in_features, num_classes, n_layers=2, hidden_dim=256, dropout=0.75):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
@@ -66,7 +66,7 @@ class RandomForest():
     def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", criterion=critirion, bootstrap=bootstrap, verbose=10)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", random_state=0, criterion=critirion, bootstrap=bootstrap, verbose=10)
         
     
     def fit(self, train_inputs, train_labels):

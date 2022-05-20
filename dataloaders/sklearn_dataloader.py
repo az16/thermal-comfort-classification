@@ -45,10 +45,12 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cols=[
+    def __init__(self, cols=["Weight",
+                            "Bodyfat",
                             "PCE-Ambient-Temp",	
                             "Wrist_Skin_Temperature",
                             "GSR",
+                            "Ambient_Temperature",
                             "Ambient_Humidity",
                             "Label"]):
         self.columns = cols

@@ -5,7 +5,6 @@ merged_log_participant_5_2022-04-25_09-27-22.csv
 merged_log_participant_6_2022-04-25_15-10-56.csv
 merged_log_participant_7_2022-04-26_09-04-15.csv
 merged_log_participant_8_2022-04-28_10-10-51.csv
-merged_log_participant_9_C_2022-04-28_14-12-46.csv
 merged_log_participant_10_2022-04-28_15-35-18.csv
 merged_log_participant_11_2022-04-29_11-43-10.csv
 merged_log_participant_12_2022-04-29_13-44-14.csv

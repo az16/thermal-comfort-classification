@@ -22,7 +22,7 @@ class TC_RNN_Module(pl.LightningModule):
         mask = self.convert_to_list(cols)
         self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
                                                     batch_size=batch_size, 
-                                                    shuffle=False, 
+                                                    shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
         self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
