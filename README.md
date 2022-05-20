@@ -1,7 +1,7 @@
 # Thermal Comfort Classification
 Pytorch based models for classification of thermal comfort states using a multi-modal data.
 
-##Dataset
+## Dataset
 Basic description:
 * __Age__: M=24.64, SD= 3.03, range=[20, 33]
 * __Weight__: M=69.97, SD=15.02, range=[53, 106.9]
@@ -17,7 +17,11 @@ Basic description:
 *  __Ambient-Temp__: M=25.31, SD=3.72, range=[17.1, 33.7]
 * __Relative-Humidity__: M=2.94, SD=13.46, range=[40.0, 191.99]
 
-![Alt text](https://cloudstore.uni-ulm.de/s/64Q7srY7yegnoby "Label Distribution")
+
+![Label Distribution](https://user-images.githubusercontent.com/30021201/169478572-41a2936d-a5c9-4d46-90c8-20ceaccfcc06.png)
+
+
+
 
 ## Preprocessing Steps
 Outlier removal based on interquartil range, filtering of lines with missing values is done for all items.
