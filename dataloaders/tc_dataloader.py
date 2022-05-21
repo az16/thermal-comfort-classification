@@ -227,7 +227,7 @@ class TC_Dataloader(BaseDataset):
         # print(out)
         # print(label)
         # print(label.shape)
-        return out.type(torch.FloatTensor), label.type(torch.LongTensor)
+        return out.float(), label.float()#.type(torch.LongTensor)
     
     def __len__(self):
         """

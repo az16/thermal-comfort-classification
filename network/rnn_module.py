@@ -1,6 +1,6 @@
 from multiprocessing import cpu_count
-from torchmetrics import Accuracy
-from metrics import compute_confusion_matrix
+#from torchmetrics import Accuracy
+from metrics import rmse, mae
 import pandas as pd
 import torch
 import pytorch_lightning as pl
@@ -20,12 +20,12 @@ class TC_RNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, continuous_labels=True, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
@@ -35,14 +35,14 @@ class TC_RNN_Module(pl.LightningModule):
                                                 shuffle=False, 
                                                 num_workers=cpu_count(), 
                                                 pin_memory=True)
-        self.criterion = torch.nn.CrossEntropyLoss()
-        self.acc_train = Accuracy()
-        self.acc_val = Accuracy()
-        self.acc_test = Accuracy()
-        self.train_preds = []
-        self.train_labels = []
-        self.val_preds = []
-        self.val_labels = []
+        self.criterion = torch.nn.MSELoss()
+        #self.acc_train = Accuracy()
+        # self.acc_val = Accuracy()
+        # self.acc_test = Accuracy()
+        # self.train_preds = []
+        # self.train_labels = []
+        # self.val_preds = []
+        # self.val_labels = []
         
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
@@ -84,72 +84,75 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
-        if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
+        #if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
-        y_hat = self(x)
+        y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
-        
+        print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_train(preds, y)
-        accuracy = self.acc_train.compute()
+        # preds = torch.argmax(y_hat, dim=1)
+        # self.acc_train(preds, y)
+        # accuracy = self.acc_train.compute()
         self.log("train_loss", loss, prog_bar=True, logger=True)
-        self.log("train_accuracy", accuracy, prog_bar=True, logger=True)
+        self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
+        self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[preds[0]])
-        self.train_labels.append(self.label_names[y[0]])
+        # preds = preds.cpu()
+        # y = y.cpu().long()
+        # # print(self.label_names[preds[0]])
+        # # print(self.label_names[y[0]])
+        # self.train_preds.append(self.label_names[preds[0]])
+        # self.train_labels.append(self.label_names[y[0]])
         
-        return {"loss": loss, "accuracy": accuracy}
+        return {"loss": loss}
     
     def validation_step(self, batch, batch_idx):
-        if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
+        #if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
-        y_hat = self(x)
+        y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
         
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_val(preds, y)
-        accuracy = self.acc_val.compute()
+        # preds = torch.argmax(y_hat, dim=1)
+        # self.acc_train(preds, y)
+        # accuracy = self.acc_train.compute()
         self.log("val_loss", loss, prog_bar=True, logger=True)
-        self.log("val_accuracy", accuracy, prog_bar=True, logger=True)
+        self.log("val_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
+        self.log("val_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.val_preds.append(self.label_names[preds[0]])
-        self.val_labels.append(self.label_names[y[0]])
+        # preds = preds.cpu()
+        # y = y.cpu().long()
+        # # print(self.label_names[preds[0]])
+        # # print(self.label_names[y[0]])
+        # self.train_preds.append(self.label_names[preds[0]])
+        # self.train_labels.append(self.label_names[y[0]])
         
-        return {"loss": loss, "accuracy": accuracy}
+        return {"loss": loss}
         
-    def on_validation_end(self):
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
+    # def on_validation_end(self):
+    #     if len(self.train_preds) > 0:
+    #         compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
+    #     if len(self.val_preds) > 0:
+    #         compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
         
     def test_step(self, batch, batch_idx):
-        if batch_idx == 0: self.acc_test.reset()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
-        y_hat = self(x)
+        y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
         
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_test(preds, y)
-        accuracy = self.acc_test.compute()
+        # preds = torch.argmax(y_hat, dim=1)
+        # self.acc_train(preds, y)
+        # accuracy = self.acc_train.compute()
         self.log("test_loss", loss, prog_bar=True, logger=True)
-        self.log("test_accuracy", accuracy, prog_bar=True, logger=True)
-        return {"loss": loss, "accuracy": accuracy}
+        self.log("test_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
+        self.log("test_mae", mae(y_hat, y), prog_bar=True, logger=True)
+        
+        return {"loss": loss}
     

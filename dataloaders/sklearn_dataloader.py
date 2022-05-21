@@ -45,14 +45,13 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cols=["Weight",
-                            "Bodyfat",
-                            "PCE-Ambient-Temp",	
-                            "Wrist_Skin_Temperature",
-                            "GSR",
-                            "Ambient_Temperature",
-                            "Ambient_Humidity",
-                            "Label"]):
+    def __init__(self, cols=["Age","Gender","Weight","Height","Bodytemp","Bodyfat","Sport-Last-Hour","Time-Since-Meal","Tiredness","Clothing-Level","Radiation-Temp",
+                                                                                                        "PCE-Ambient-Temp",	
+                                                                                                        "Wrist_Skin_Temperature",
+                                                                                                        "Heart_Rate",
+                                                                                                        "GSR",
+                                                                                                        "Ambient_Humidity",
+                                                                                                        "Label"]):
         self.columns = cols
         self.independent = cols[:-1]
         self.dependent = cols[-1]
@@ -133,8 +132,8 @@ class TC_Dataloader():
         no_answer_test = ~no_answer_test
         self.test_df = self.test_df[no_answer_test]
         
-        # self.train_df = convert_str_nominal(self.train_df)
-        # self.test_df = convert_str_nominal(self.test_df)
+        self.train_df = convert_str_nominal(self.train_df)
+        self.test_df = convert_str_nominal(self.test_df)
         # print(np.array(self.train_df["Tiredness"]).dtype)
         # # self.train_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
         # # self.test_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)

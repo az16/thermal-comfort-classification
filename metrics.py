@@ -99,6 +99,7 @@ def visualize_feature_importance(feature_imp, feature_names):
     plt.figure(figsize=(10, 10))
     fig = m.get_figure()
     fig.savefig("sklearn_logs/media/{0}.png".format("test"))
+    plt.close(fig)
 
 def accuracy_score(preds, labels):
     return metrics.accuracy_score(labels,preds)
