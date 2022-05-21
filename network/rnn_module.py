@@ -27,12 +27,12 @@ class TC_RNN_Module(pl.LightningModule):
                                                     pin_memory=True)
         self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                     batch_size=1, 
-                                                    shuffle=False, 
+                                                    shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True) 
         self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                 batch_size=1, 
-                                                shuffle=False, 
+                                                shuffle=True, 
                                                 num_workers=cpu_count(), 
                                                 pin_memory=True)
         self.criterion = torch.nn.MSELoss()
