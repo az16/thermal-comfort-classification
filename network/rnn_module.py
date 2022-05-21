@@ -30,7 +30,7 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=cpu_count(), 
@@ -90,7 +90,7 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
-        print(y_hat, y)
+        #print(y_hat, y)
         loss = self.criterion(y_hat, y)
         # preds = torch.argmax(y_hat, dim=1)
         # self.acc_train(preds, y)

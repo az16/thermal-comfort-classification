@@ -1,4 +1,4 @@
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn import svm
 from dataloaders.path import Path
 from argparse import ArgumentParser
@@ -33,8 +33,8 @@ if __name__ == "__main__":
     
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
-    parser.add_argument('--estimators', default=20, type=int, help='Number of estimators.')
-    parser.add_argument('--depth', default=32, type=int, help='Max depth for tree descend.')
+    parser.add_argument('--estimators', default=60, type=int, help='Number of estimators.')
+    parser.add_argument('--depth', default=8, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     dataset = TC_Dataloader()
     
     x_t, y_t, x_v, y_v = dataset.splits()
+    # x_t, x_v, y_t, y_v = train_test_split(x_t, y_t, test_size=0.3, random_state=0, shuffle=True)
     
     feature_names = dataset.independent
     #label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]

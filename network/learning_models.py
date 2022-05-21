@@ -31,7 +31,7 @@ class RNN(nn.Module):
         LSTM classifier without activation layer
         """
         
-        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=0.5)
+        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, 1)
         self.tan = nn.Tanh()
         
@@ -69,7 +69,7 @@ class RandomForest():
     def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", random_state=0, criterion=critirion, bootstrap=bootstrap, verbose=10, min_samples_leaf=2)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", random_state=0, criterion=critirion, bootstrap=bootstrap, verbose=10, min_samples_leaf=6)
         
     
     def fit(self, train_inputs, train_labels):
