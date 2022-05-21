@@ -47,7 +47,7 @@ class TC_RNN_Module(pl.LightningModule):
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_categories, dropout=dropout).cuda(); self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        if gpu_mode: self.model = RNN(num_features, num_categories, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
         else: self.model = RNN(num_features, num_categories, dropout=dropout)
 
     def convert_to_list(self, config_string):
