@@ -33,12 +33,14 @@ class RNN(nn.Module):
         
         self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, 1)
+        self.dp = nn.Dropout(dropout)
         self.tan = nn.Tanh()
         
     def forward(self, x):
         self.lstm.flatten_parameters() #use multi GPU capabilities
         _, (h_t, _) = self.lstm(x)
         x = h_t[-1]
+        #x = self.dp(x)
         x = self.fc(x)
         x = self.tan(x)
         #x *= 3 #scale to [-3,3]

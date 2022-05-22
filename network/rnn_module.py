@@ -63,7 +63,7 @@ class TC_RNN_Module(pl.LightningModule):
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
         scheduler = {
             'scheduler': lr_scheduler,
             'monitor': 'val_loss'
