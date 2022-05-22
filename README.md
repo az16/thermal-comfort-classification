@@ -20,7 +20,7 @@ Basic description:
 *  __Ambient-Temp__: M=25.31, SD=3.72, range=[17.1, 33.7]
 * __Relative-Humidity__: M=31.35, SD=8.86, range=[12.0, 55.0]
 * __Emotion-ML__: Anger: 0.1099, Disgust: 0.0008, Fear: 0.1348, Happy: 0.0898, __Neutral: 0.4114__, Sadness: 0.2087, Surprise: 0.0446
-* __Emotion-Self: Anger:0.0083, Contempt: 0.0003, Disgust: 0.0314, Fear: 0.0003, Happiness: 0.0835, __Neutral: 0.8638__, Sadness: 0.0073, Surprise: 0.0049
+* __Emotion-Self__: Anger:0.0083, Contempt: 0.0003, Disgust: 0.0314, Fear: 0.0003, Happiness: 0.0835, __Neutral: 0.8638__, Sadness: 0.0073, Surprise: 0.0049
 
 
 ![Label Distribution](https://user-images.githubusercontent.com/30021201/169478572-41a2936d-a5c9-4d46-90c8-20ceaccfcc06.png)
