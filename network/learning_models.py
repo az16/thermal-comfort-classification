@@ -25,13 +25,13 @@ class MLP(nn.Module):
         return torch.squeeze(x)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=2, hidden_dim=10, dropout=0.1):
+    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=10, dropout=0.1):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
         
-        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, 1)
         self.tan = nn.Tanh()
         

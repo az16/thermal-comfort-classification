@@ -93,7 +93,7 @@ class TC_Dataloader():
         #self.test_df.astype(data_type_dict)
         
         #shuffle
-        #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = pd.get_dummies(self.test_df)
         
         self.preprocess()
@@ -153,8 +153,8 @@ class TC_Dataloader():
         self.test_df.astype(data_type_dict)
         
         #shuffle
-        # self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-        # self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
         if "Gender" in self.columns or "Bodyfat" in self.columns:
             self.preprocess()
         
