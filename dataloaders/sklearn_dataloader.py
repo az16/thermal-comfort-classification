@@ -196,7 +196,7 @@ class TC_Dataloader():
         self.train_df = self.full_df[0:limit]
         self.test_df = self.full_df[limit:]
         # print(self.train_df)
-        print(self.test_df)
+        #print(self.test_df)
         #self.test_df.astype(data_type_dict)
         
         #shuffle

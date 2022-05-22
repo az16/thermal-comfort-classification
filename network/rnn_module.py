@@ -27,7 +27,7 @@ class TC_RNN_Module(pl.LightningModule):
                                                     pin_memory=True)
         self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                     batch_size=1, 
-                                                    shuffle=True, 
+                                                    shuffle=False, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True) 
         self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
@@ -63,7 +63,7 @@ class TC_RNN_Module(pl.LightningModule):
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
         scheduler = {
             'scheduler': lr_scheduler,
             'monitor': 'val_loss'
