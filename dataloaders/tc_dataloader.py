@@ -77,10 +77,10 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
-            lines = file.readlines()
-            file_names = [line.rstrip() for line in lines]
+        file_names = os.listdir(Path.db_root_dir("tcs"))
+        # with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
+        #     lines = file.readlines()
+        #     file_names = [line.rstrip() for line in lines]
         assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
             
         file_names = [Path.db_root_dir("tcs")+x for x in file_names]
@@ -93,11 +93,23 @@ class TC_Dataloader(BaseDataset):
         # if split == "training": file_names = file_names[:train_limit]; print("Using {0} files for {1}".format(train_limit, self.split))
         # elif split == "validation": file_names = file_names[train_limit:val_limit]; print("Using {0} files for {1}".format(val_size, self.split))
         # elif split == "test": file_names = file_names[val_limit:]; print("Using {0} files for {1}".format(test_size, self.split))
-        
+
         #load .csv contents as list
         print("Loading contents..")
         self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
         print("Creating data frames..")
+        
+        limit = 0
+        size = len(self.df)
+        if split == "training":
+            limit = int(size*0.6)
+            self.df = self.df[0:limit]
+        elif split == "validation":
+            limit = int(size*0.6), int(size*0.6)+int(size*0.2)
+            self.df = self.df[limit[0]:limit[1]]
+        elif split == "test":
+            limit = size - int(size*0.2)
+            self.df = self.df[limit:]
         print("File contents loaded!")
         
     def preprocess(self):

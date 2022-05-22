@@ -66,10 +66,10 @@ class CNN(nn.Module):
 
 
 class RandomForest():
-    def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True):
+    def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True, max_features="log2"):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features="log2", random_state=0, criterion=critirion, bootstrap=bootstrap, verbose=10, min_samples_leaf=6)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, random_state=0, criterion=critirion, bootstrap=bootstrap, verbose=10, min_samples_leaf=6)
         
     
     def fit(self, train_inputs, train_labels):

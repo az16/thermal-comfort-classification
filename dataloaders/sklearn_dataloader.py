@@ -45,12 +45,11 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, split_size=0.8, by_file = True, full=False, cols=["Age","Gender","Weight","Height","Bodytemp","Bodyfat","Sport-Last-Hour","Time-Since-Meal","Tiredness","Clothing-Level","Radiation-Temp",
-                                                                                                        "PCE-Ambient-Temp",	
+    def __init__(self, split_size=0.8, by_file = True, full=False, cols=["Age","Gender","Weight","Height","Bodytemp","Bodyfat","Sport-Last-Hour","Time-Since-Meal","Tiredness","Clothing-Level",
                                                                                                         "Wrist_Skin_Temperature",
                                                                                                         "Heart_Rate",
                                                                                                         "GSR",
-                                                                                                        "Ambient_Humidity",
+                                                                                                        "Ambient_Temperature",
                                                                                                         "Label"]):
         self.columns = cols
         self.independent = cols[:-1]

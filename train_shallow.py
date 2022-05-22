@@ -33,8 +33,8 @@ if __name__ == "__main__":
     
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
-    parser.add_argument('--estimators', default=60, type=int, help='Number of estimators.')
-    parser.add_argument('--depth', default=8, type=int, help='Max depth for tree descend.')
+    parser.add_argument('--estimators', default=20, type=int, help='Number of estimators.')
+    parser.add_argument('--depth', default=16, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     
@@ -61,8 +61,9 @@ if __name__ == "__main__":
     # print("Test accuracy: {0}".format(accuracy_score(preds, y_v)))
     
     
-    print("Fitting model to training data..")
-    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, cv=False)
+    #print("Fitting model to training data..")
+    print("Features: {0}".format(x_t.shape[1]))
+    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, max_features=x_t.shape[1], cv=False)
     clf = model.rf
     
     # grid_clf = GridSearchCV(clf, params_grid, cv=10, return_train_score=True, verbose=5)
