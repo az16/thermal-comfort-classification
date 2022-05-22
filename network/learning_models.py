@@ -25,7 +25,7 @@ class MLP(nn.Module):
         return torch.squeeze(x)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=10, dropout=0.1):
+    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=10, dropout=0.5):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
@@ -40,7 +40,7 @@ class RNN(nn.Module):
         self.lstm.flatten_parameters() #use multi GPU capabilities
         _, (h_t, _) = self.lstm(x)
         x = h_t[-1]
-        #x = self.dp(x)
+        x = self.dp(x)
         x = self.fc(x)
         x = self.tan(x)
         #x *= 3 #scale to [-3,3]
