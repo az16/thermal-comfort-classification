@@ -154,7 +154,7 @@ class TC_Dataloader(BaseDataset):
 
             if self.continuous_labels:
                 print("Using continuous labels.")
-                self.df["Label"] = self.df["Label"] + noise(self.df["Label"].shape)
+                self.df["Label"] = self.df["Label"] + noise(self.df["Label"], masked=True)
             
         
         

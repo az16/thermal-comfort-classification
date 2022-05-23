@@ -234,8 +234,14 @@ def convert_binary(x):
 def place_holder(x):
     return x
 
-def noise(shape, mean = 0, std = 0.3):
-    return np.random.normal(mean, std, shape)
+def noise(df, mean = 0, std = 0.3, masked=False):
+    if not masked:
+        return np.random.normal(mean, std, df)
+    full = np.random.normal(mean, std, df.shape[0])
+    tmp = np.array(df)
+    tmp = (-2 <= tmp)+(tmp<= 2)
+    full = full * tmp
+    return full
 
 operations = dict({
             "Age" : norm,
