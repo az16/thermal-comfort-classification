@@ -107,4 +107,4 @@ if __name__ == "__main__":
         #train and test afterwards (uncomment testing if not enough data is available)
         print(args)
         trainer.fit(tc_module)
-        trainer.test(tc_module, verbose=True)
+        #trainer.test(tc_module, verbose=True)
