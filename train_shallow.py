@@ -70,7 +70,9 @@ if __name__ == "__main__":
     dataset = TC_Dataloader()
     
     x_t, y_t, x_v, y_v = dataset.splits()
-    
+    x_v, x_test = x_v[:int(x_v.shape[0]/2)], x_v[int(x_v.shape[0]/2):]
+    y_v, y_test = y_v[:int(y_v.shape[0]/2)], y_v[int(y_v.shape[0]/2):]
+    print(x_v.shape, x_test.shape)
     feature_names = dataset.independent
     #label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]
     label_names = [-3,-2,-1,0,1,2,3]    
@@ -102,7 +104,7 @@ if __name__ == "__main__":
     #print(feature_importance)
     visualize_feature_importance(feature_importance, feature_names)
     
-    r_i, r_l = get_random_prediciton_input(x_v, y_v)
+    r_i, r_l = get_random_prediciton_input(x_test, y_test)
     
     print("Testing on random inputs from dataset..")
     for i in range(0,len(r_i)):

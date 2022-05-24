@@ -3,6 +3,8 @@ from PIL import Image
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic
 import scipy.ndimage.interpolation as itpl
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
 import torch
 import numpy as np
 import os
@@ -133,14 +135,18 @@ def to_tensor(img):
 def norm(sample, min=None, max=None):
     # print(sample)
     #print(min, max)
-    if not min is None and max is None:
-        max = np.max(sample)
-    elif not max is None and min is None:
-        min = np.min(sample)
-    elif max is None and min is None:
-        min = np.min(sample)
-        max = np.max(sample)
-    return (sample - min)/(max-min) 
+    # if not min is None and max is None:
+    #     max = np.max(sample)
+    # elif not max is None and min is None:
+    #     min = np.min(sample)
+    # elif max is None and min is None:
+    #     min = np.min(sample)
+    #     max = np.max(sample)
+    # return (sample - min)/(max-min) 
+    x = np.array(sample.values) #returns a numpy array
+    x_scaled = standardize(x)
+    df = pd.DataFrame(x_scaled)
+    return df
 
 def standardize(sample):
     return (sample-np.mean(sample)/np.std(sample))

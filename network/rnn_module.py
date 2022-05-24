@@ -20,7 +20,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
@@ -119,8 +119,8 @@ class TC_RNN_Module(pl.LightningModule):
         
         loss = self.criterion(y_hat, y)
         preds = torch.argmax(y_hat, dim=1)
-        self.acc_train(preds, y)
-        accuracy = self.acc_train.compute()
+        self.acc_val(preds, y)
+        accuracy = self.acc_val.compute()
         self.log("val_loss", loss, prog_bar=True, logger=True)
         self.log("val_acc", accuracy, prog_bar=True, logger=True)
         # self.log("val_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
