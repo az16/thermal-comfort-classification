@@ -12,7 +12,7 @@ from dataloaders.path import *
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
@@ -47,8 +47,8 @@ class TC_RNN_Module(pl.LightningModule):
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_categories, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
-        else: self.model = RNN(num_features, num_categories, dropout=dropout)
+        if gpu_mode: self.model = RNN(num_features, num_categories, hidden_dim=hidden, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        else: self.model = RNN(num_features, num_categories, hidden_dim=hidden, dropout=dropout)
 
     def convert_to_list(self, config_string):
         trimmed_brackets = config_string[1:len(config_string)-1]

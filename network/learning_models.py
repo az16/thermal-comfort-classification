@@ -25,7 +25,7 @@ class MLP(nn.Module):
         return torch.squeeze(x)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=16, dropout=0.2):
+    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=128, dropout=0.2):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
@@ -33,6 +33,7 @@ class RNN(nn.Module):
         
         self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, num_classes)
+        self.activation = nn.Softmax(dim=1)
         
         
     def forward(self, x):
@@ -41,7 +42,7 @@ class RNN(nn.Module):
         x = h_t[-1]
         #x = self.dp(x)
         x = self.fc(x)
-        #x = self.tan(x)
+        x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
     
@@ -82,3 +83,9 @@ class RandomForest():
         
     def predict(self, x):
         return self.rf.predict(x)
+    
+
+if __name__ == "__main__":
+    t = torch.randn((4,10,4))
+    model = RNN(4,7)
+    print(torch.sum(model(t), dim=1))

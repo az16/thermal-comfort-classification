@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
+    parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
 
 
     args = parser.parse_args()
@@ -92,8 +93,8 @@ if __name__ == "__main__":
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
     tc_module = None 
     if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout) 
-    
+    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden) 
+    print(args)
     print("Using {0} lightning module.".format(args.module.upper()))
     #print(tc_module)
     if args.find_learning_rate:
@@ -105,6 +106,5 @@ if __name__ == "__main__":
         print("Suggested learning rate: ", args.learning_rate)
     else:
         #train and test afterwards (uncomment testing if not enough data is available)
-        print(args)
         trainer.fit(tc_module)
         #trainer.test(tc_module, verbose=True)
