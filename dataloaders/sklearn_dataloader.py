@@ -49,8 +49,8 @@ class TC_Dataloader():
                                                                                                         "Wrist_Skin_Temperature",
                                                                                                         "Heart_Rate",
                                                                                                         "GSR",
-                                                                                                        "Radiant-Temp",
-                                                                                                        "Ambient_Humidity"
+                                                                                                        "Radiation-Temp",
+                                                                                                        "Ambient_Humidity",
                                                                                                         "Ambient_Temperature",
                                                                                                         "Label"]):
         self.columns = cols
@@ -153,10 +153,10 @@ class TC_Dataloader():
         
         self.train_df.astype(data_type_dict)
         self.test_df.astype(data_type_dict)
-        
+        #print(self.train_df)
         #shuffle
-        #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-        #self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
         if "Gender" in self.columns or "Bodyfat" in self.columns:
             self.preprocess()
         

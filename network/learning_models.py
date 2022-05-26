@@ -1,5 +1,7 @@
+from sklearn import feature_extraction
 import torch.nn as nn
 import torch
+import torchvision as tv
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 #from network.computations import categoryFromOutput
 
@@ -49,27 +51,48 @@ class RNN(nn.Module):
         x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
-    
-    # def init_hidden(self, batch_size):
-    #     weight = next(self.parameters()).data
-    #     hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_(),
-    #               weight.new(self.n_layers, batch_size, self.hidden_dim).zero_())
-    #     return hidden
 
 
-class CNN(nn.Module):
-    def __init__(self, input_size, num_categories):
-        super(CNN, self).__init__()
-
-        """
-        CNN classifier for image/keypoint input
-        """
+class RCNN(nn.Module):
+    def __init__(self, num_classes=7, hidden=512, n_layers=2, dropout=0.2):
+        super(RCNN, self).__init__()
         
+        self.n_layers = n_layers
+        self.feature_extractor = tv.models.resnet18(pretrained=True, progress=True)#use pretrained resnet
+        num_features = self.feature_extractor.fc.in_features
         
-
+        self.feature_extractor.fc = Skip() #take resnet fully connected out
+        
+        self.dropout= nn.Dropout(dropout) #regularization
+        self.lstm = nn.LSTM(num_features, hidden, n_layers, batch_first=True)#rnn
+        if n_layers > 1:
+            self.lstm = nn.LSTM(num_features, hidden, n_layers, batch_first=True, dropout=dropout)
+            
+        self.fc = nn.Linear(hidden, num_classes)
+        
+        self.activation = nn.Softmax(dim=1) #Softmax activation with 7 classes 
+        
     def forward(self, x):
-        pass
-
+        _, S, _, _, _ = x.shape
+        #Use resnet feature extractor to create sequence of features --> shape: B, S, self.feature_extractor.output_size
+        tmp = [torch.unsqueeze(self.feature_extractor(x[:,i]), dim=1) for i in range(0,S)]
+        tmp = torch.cat(tmp, dim=1) 
+        # print(tmp.shape)
+        self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
+        _, (h_t, _) = self.lstm(tmp)
+        x = h_t[-1]
+        if self.n_layers > 1:
+            x = self.dropout(x)
+        x = self.fc(x)
+        x = self.activation(x)
+        #x *= 3 #scale to [-3,3]
+        return x #x.float()
+    
+class Skip(nn.Module):
+    def __init__(self):
+        super(Skip, self).__init__()
+    def forward(self, x):
+        return x    
 
 class RandomForest():
     def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True, max_features="log2"):
@@ -89,7 +112,7 @@ class RandomForest():
         return self.rf.predict(x)
     
     def weight_func(self, x):
-        return 0.1*x^2+1
+        return 0.1*(x**2)+1.0
     
     def weight_dict(self):
         weights = {-3: self.weight_func(-3),
@@ -119,6 +142,11 @@ class RandomForestRegressor():
         return self.rf.predict(x)
 
 if __name__ == "__main__":
-    t = torch.randn((4,10,4))
-    model = RNN(4,7)
-    print(torch.sum(model(t), dim=1))
+    t = torch.randn((16,5,3,224,224))
+    # t = torch.Tensor([1.9, 1.9, 1.1, 1.0, 1.4, 1.1, 1.4])
+    # print(t.shape)
+    # print(t)
+    m = RCNN()
+    r = m(t)
+    print(r.shape)
+    print(r)
