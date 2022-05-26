@@ -4,6 +4,7 @@ from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic
 import scipy.ndimage.interpolation as itpl
 from sklearn.preprocessing import StandardScaler
+import cv2 
 import pandas as pd
 import torch
 import numpy as np
@@ -104,6 +105,7 @@ numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bod
 categorical = ["Gender", "Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
 optional = ["Weight", "Height", "Bodyfat"]
+image_only = ["RGB_Frontal_View"]
 
 
     
@@ -249,6 +251,14 @@ def noise(df, mean = 0, std = 0.3, masked=False):
     full = full * tmp
     return full
 
+def make_full_path(root, df):
+    df["RGB_Frontal_View"] = root + df['RGB_Frontal_View'].astype(str)
+    return df
+
+def load_resized(out_size, df):
+    df["RGB_Frontal_View"] = pd.Series(np.array([cv2.resize(cv2.imread(path), out_size, interpolation="INTER_NEAREST") for path in df["RGB_Frontal_View"]]))
+    return df
+
 operations = dict({
             "Age" : norm,
             "Gender" : one_hot,
@@ -262,6 +272,7 @@ operations = dict({
             "Radiation-Temp": norm,
             "PCE-Ambient-Temp": norm,
             "Clothing-Level": place_holder,
+            "RGB_Frontal_View": make_full_path,
             "Nose": to_keypoint,
             "Neck": to_keypoint,
             "RShoulder": to_keypoint,

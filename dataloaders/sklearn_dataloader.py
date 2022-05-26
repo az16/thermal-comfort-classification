@@ -49,6 +49,8 @@ class TC_Dataloader():
                                                                                                         "Wrist_Skin_Temperature",
                                                                                                         "Heart_Rate",
                                                                                                         "GSR",
+                                                                                                        "Radiant-Temp",
+                                                                                                        "Ambient_Humidity"
                                                                                                         "Ambient_Temperature",
                                                                                                         "Label"]):
         self.columns = cols
@@ -116,7 +118,7 @@ class TC_Dataloader():
         split = "training"
         print("Searching for {0} files..".format(split))
         train_file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "no_test")) as file:
+        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "60")) as file:
             lines = file.readlines()
             train_file_names = [line.rstrip() for line in lines]
         assert len(train_file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
@@ -127,7 +129,7 @@ class TC_Dataloader():
         split = "validation"
         print("Searching for {0} files..".format(split))
         test_file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "no_test")) as file:
+        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "60")) as file:
             lines = file.readlines()
             test_file_names = [line.rstrip() for line in lines]
         assert len(test_file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
@@ -153,8 +155,8 @@ class TC_Dataloader():
         self.test_df.astype(data_type_dict)
         
         #shuffle
-        self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-        self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        #self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
         if "Gender" in self.columns or "Bodyfat" in self.columns:
             self.preprocess()
         

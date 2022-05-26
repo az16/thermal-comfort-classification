@@ -2,7 +2,7 @@ from cv2 import correctMatches
 from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
 from dataloaders.path import Path
 from argparse import ArgumentParser
-from network.learning_models import RandomForest
+from network.learning_models import RandomForest, RandomForestRegressor
 from dataloaders.sklearn_dataloader import TC_Dataloader
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
     parser.add_argument('--estimators', default=5, type=int, help='Number of estimators.')
-    parser.add_argument('--depth', default=16, type=int, help='Max depth for tree descend.')
+    parser.add_argument('--depth', default=8, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     clf_tree(preds_train, y_t, label_names, "train classifier")
     clf_tree(preds_val, y_v, label_names, "test classifier")
     print("Computing feature importance")
-    feature_importance = model.feature_importances()
+    #feature_importance = model.feature_importances()
     #print(feature_importance)
-    visualize_feature_importance(feature_importance, feature_names)
+    #visualize_feature_importance(feature_importance, feature_names)
     
     r_i, r_l = get_random_prediciton_input(x_test, y_test)
     
