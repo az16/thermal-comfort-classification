@@ -37,7 +37,8 @@ class RNN(nn.Module):
         self.dp_layer = nn.Dropout(dropout)
         if n_layers > 1:
             self.lstm = self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        self.fc = nn.Linear(hidden_dim, num_classes)
+        self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
+        self.fc2 = nn.Linear(hidden_dim//2, num_classes)
         self.activation = nn.Softmax(dim=1)
         
         
@@ -45,9 +46,10 @@ class RNN(nn.Module):
         self.lstm.flatten_parameters() #use multi GPU capabilities
         _, (h_t, _) = self.lstm(x)
         x = h_t[-1]
-        if self.n_layers > 1:
+        if self.n_layers == 1:
             x = self.dp_layer(x)
-        x = self.fc(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
         #x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
@@ -58,7 +60,7 @@ class RCNN(nn.Module):
         super(RCNN, self).__init__()
         
         self.n_layers = n_layers
-        self.feature_extractor = tv.models.resnet18(pretrained=True, progress=True)#use pretrained resnet
+        self.feature_extractor = tv.models.resnet18(pretrained=True, progress=True) #use pretrained resnet
         num_features = self.feature_extractor.fc.in_features
         
         self.feature_extractor.fc = Skip() #take resnet fully connected out

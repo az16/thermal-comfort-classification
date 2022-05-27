@@ -156,7 +156,7 @@ class TC_Dataloader():
         #print(self.train_df)
         #shuffle
         self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-        self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        # self.test_df = self.train_df.sample(frac=1).reset_index(drop=True)
         if "Gender" in self.columns or "Bodyfat" in self.columns:
             self.preprocess()
         
