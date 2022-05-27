@@ -48,7 +48,7 @@ class RNN(nn.Module):
         if self.n_layers > 1:
             x = self.dp_layer(x)
         x = self.fc(x)
-        x = self.activation(x)
+        #x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
 
