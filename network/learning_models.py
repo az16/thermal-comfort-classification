@@ -49,6 +49,7 @@ class RNN(nn.Module):
         if self.n_layers == 1:
             x = self.dp_layer(x)
         x = self.fc1(x)
+        x = self.dp_layer(x)
         x = self.fc2(x)
         #x = self.activation(x)
         #x *= 3 #scale to [-3,3]
@@ -56,12 +57,12 @@ class RNN(nn.Module):
 
 
 class RCNN(nn.Module):
-    def __init__(self, num_classes=7, hidden=512, n_layers=2, dropout=0.2):
+    def __init__(self, num_in_features, num_classes=7, hidden=512, n_layers=2, dropout=0.2):
         super(RCNN, self).__init__()
         
         self.n_layers = n_layers
         self.feature_extractor = tv.models.resnet18(pretrained=True, progress=True) #use pretrained resnet
-        num_features = self.feature_extractor.fc.in_features
+        num_features = self.feature_extractor.fc.in_features + num_in_features
         
         self.feature_extractor.fc = Skip() #take resnet fully connected out
         
@@ -75,11 +76,14 @@ class RCNN(nn.Module):
         self.activation = nn.Softmax(dim=1) #Softmax activation with 7 classes 
         
     def forward(self, x):
-        _, S, _, _, _ = x.shape
+        rgb = x[0]
+        _, S, _, _, _ = rgb.shape
+        numeric = x[1]
+        
         #Use resnet feature extractor to create sequence of features --> shape: B, S, self.feature_extractor.output_size
-        tmp = [torch.unsqueeze(self.feature_extractor(x[:,i]), dim=1) for i in range(0,S)]
-        tmp = torch.cat(tmp, dim=1) 
-        # print(tmp.shape)
+        tmp = [torch.unsqueeze(torch.cat((self.feature_extractor(rgb[:,i]), numeric[:,i]), dim=1), dim=1) for i in range(0,S)]
+        tmp = torch.cat(tmp, dim=1)
+
         self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
         _, (h_t, _) = self.lstm(tmp)
         x = h_t[-1]
@@ -144,11 +148,13 @@ class RandomForestRegressor():
         return self.rf.predict(x)
 
 if __name__ == "__main__":
-    t = torch.randn((16,5,3,224,224))
+    t1 = torch.randn((16,5,3,512,512))
+    t2 = torch.randn((16,5,4))
+    t = (t1,t2)
     # t = torch.Tensor([1.9, 1.9, 1.1, 1.0, 1.4, 1.1, 1.4])
     # print(t.shape)
     # print(t)
-    m = RCNN()
+    m = RCNN(num_in_features=4)
     r = m(t)
     print(r.shape)
-    print(r)
+    #print(r)

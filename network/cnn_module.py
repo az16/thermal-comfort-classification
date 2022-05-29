@@ -4,7 +4,7 @@ from metrics import rmse, mae, compute_confusion_matrix
 import pandas as pd
 import torch
 import pytorch_lightning as pl
-from network.learning_models import RNN
+from network.learning_models import RCNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
 
@@ -20,7 +20,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, data_augmentation=True, sequence_size=sequence_size, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
@@ -30,11 +30,7 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
-                                                batch_size=1, 
-                                                shuffle=True, 
-                                                num_workers=cpu_count(), 
-                                                pin_memory=True)
+    
         self.criterion = torch.nn.CrossEntropyLoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
@@ -47,8 +43,8 @@ class TC_RNN_Module(pl.LightningModule):
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
-        else: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
+        if gpu_mode: self.model = RCNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        else: self.model = RCNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
 
     def convert_to_list(self, config_string):
         trimmed_brackets = config_string[1:len(config_string)-1]

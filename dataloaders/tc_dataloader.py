@@ -44,12 +44,13 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, preprocess=None, use_sequence=False, sequence_size=10, output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False):
+    def __init__(self, root, split, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(800, 800),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False):
         self.split = split 
         self.root = root 
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
         self.augment_data = data_augmentation
         self.output_size = output_size
+        self.crop_size = crop_size
         self.use_imgs = use_imgs
         self.use_sequence = use_sequence
         self.sequence_size = sequence_size 
@@ -197,7 +198,8 @@ class TC_Dataloader(BaseDataset):
     def val_transform(self, rgb):
         #normed, keypoints, rgb = features
 
-        rgb = center_crop(rgb, self.output_size)
+        rgb = center_crop(rgb, self.crop_size)
+        rgb = np.resize(rgb, self.output_size)
         rgb = np.asfarray(rgb, dtype='float') / 255
 
         
