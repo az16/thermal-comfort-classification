@@ -1,15 +1,12 @@
-import multiprocessing
 from dataloaders.dataset import *
 from dataloaders.path import Path
 from tqdm import tqdm
 from dataloaders.utils import *
-from dataloaders.path import Path
-from multiprocessing import Process, Queue
+from PIL import Image
 import pandas as pd 
 
 import torch
 import numpy as np
-import os
 
 # raw data table
 # index     name       
@@ -44,7 +41,7 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(800, 800),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False):
+    def __init__(self, root, split, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False, label_col=None):
         self.split = split 
         self.root = root 
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
@@ -52,21 +49,33 @@ class TC_Dataloader(BaseDataset):
         self.output_size = output_size
         self.crop_size = crop_size
         self.use_imgs = use_imgs
+        self.img_path = "D:/tcs_study/frontal_participant_10_2022-04-28_15-35-18/"
+        self.use_col_as_label = not label_col is None
+        self.col_label = None 
+        if self.use_col_as_label: self.col_label = label_col
+       #self.use_pmv = use_pmv
         self.use_sequence = use_sequence
         self.sequence_size = sequence_size 
         self.columns = [header[x] for x in cols]
+        if self.use_imgs and "RGB_Frontal_View" not in self.columns: self.columns.insert(-2, "RGB_Frontal_View")
+        if self.use_col_as_label and "Label" in self.columns: self.columns.pop(-1); self.columns.append(self.col_label)
         self.continuous_labels = continuous_labels
+        self.metabolic = 1.0 #in met
+        self.air_vel = 0.1 #in m/s
+        
         assert not cols is None, "Specify which columns to use as inputs for training."
         print("Using these features: {0}".format(self.columns))
+        
         self.rgb_transform = None 
         self.img_list = None 
         if self.use_imgs:
             if self.split == "training": self.rgb_transform = self.train_transform
             else: self.rgb_transform = self.val_transform
+            
         self.load_file_contents(split)
         
         
-        #do dataaugmentation in case images are used
+        #do image data-augmentation in case images should be used
         if self.augment_data and "RGB_Fronal_View" in cols:
             if self.split == "training": self.transform = self.train_transform
             elif self.split == "validation": self.transform = self.val_transform
@@ -106,6 +115,8 @@ class TC_Dataloader(BaseDataset):
         #load .csv contents as list
         print("Loading contents..")
         self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
+        if self.use_col_as_label:
+            self.df.rename({self.col_label:"Label"})
         print("Creating data frames..")
         
         # limit = 0
@@ -152,13 +163,16 @@ class TC_Dataloader(BaseDataset):
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
-            #self.data_frame["pmv_index"] = pmv(self.data_frame["pmv_index"], self.data_frame["t_a"], self.data_frame["rh_a"])
+            #assert check_pmv_vars(self.columns); "Can't calculate pmv index as not all values are included in the dataframe"
+            #if self.use_pmv:
+            #    self.df["pmv_index"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["PCE-Ambient-Temp"], self.df["Ambient_Humidity"])
             
             #normalize where necessary
             if self.augment_data:
                 print("Augmenting data..")
                 for key in self.columns:
                     if key in numeric_safe:
+                        #if not (self.use_col_as_label and self.col_label == key):
                         self.df[key] = self.df[key] + noise(self.df[key].shape)
 
                 if self.continuous_labels:
@@ -169,6 +183,7 @@ class TC_Dataloader(BaseDataset):
         
         if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
             for key in self.columns:
+                #if not (self.use_col_as_label and self.col_label == key):
                 func = operations[key]
                 p = params[key]
                 args = [self.df[key]]
@@ -177,9 +192,11 @@ class TC_Dataloader(BaseDataset):
                 self.df[key] = func(*args)
         
         if self.use_imgs:
-            paths = list(self.df["RGB_Frontal_View"])
+            paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
+            # print(paths[0])
+            # print(os.path.exists(paths[0]))
             self.df.pop("RGB_Frontal_View")
-            self.img_list = [cv2.resize(cv2.imread(path), self.out_size, interpolation="INTER_NEAREST") for path in tqdm(paths)]
+            self.img_list = paths
         
         print("Pre-processing done!\r\n")
     
@@ -188,18 +205,18 @@ class TC_Dataloader(BaseDataset):
             angle = np.random.uniform(-5.0, 5.0)  # random rotation degrees
             do_flip = np.random.uniform(0.0, 1.0) < 0.5  # random horizontal flip
 
+            rgb = center_crop(rgb, self.crop_size)
+            rgb = cv2.resize(rgb, self.output_size, interpolation=cv2.INTER_AREA)
             rgb = rotate(angle, rgb)
-            rgb = center_crop(rgb, self.output_size)
             rgb = horizontal_flip(rgb, do_flip)
             rgb = np.asfarray(rgb, dtype='float') / 255
         
         return rgb
     
     def val_transform(self, rgb):
-        #normed, keypoints, rgb = features
 
         rgb = center_crop(rgb, self.crop_size)
-        rgb = np.resize(rgb, self.output_size)
+        rgb = cv2.resize(rgb, self.output_size, interpolation=cv2.INTER_AREA)
         rgb = np.asfarray(rgb, dtype='float') / 255
 
         
@@ -216,7 +233,7 @@ class TC_Dataloader(BaseDataset):
         Returns:
             sequence or single input variables, single label
         """
- 
+
         if self.use_imgs: return self.__img_return__(index)
         else: return self.__csv_only_return__(index)
             
@@ -240,13 +257,27 @@ class TC_Dataloader(BaseDataset):
         rgb_input = None
         if self.use_imgs:
             rgb = self.img_list[index]
-            if self.use_sequence: rgb = self.img_list[index:limit]
+            rgb = np.asarray(Image.open(rgb).convert('RGB'), dtype=np.uint8)
+            if self.use_sequence: 
+                rgb = self.img_list[index:limit]
+                rgb = [np.asarray(Image.open(x).convert('RGB'), dtype=np.uint8) for x in rgb]
+                if len(rgb) < self.sequence_size:
+                    #print("Size before padding: {0}".format(out.shape))
+                    pad_range = self.sequence_size-len(rgb)
+                    last_rgb = rgb[-1]
+                    pad = [last_rgb for x in range(0,pad_range)]
+                    rgb.extend(pad)
             
-            if self.transform is not None:
-                rgb_np = self.transform(rgb)
+            if not self.rgb_transform is None and not self.use_sequence:
+                rgb_np = self.rgb_transform(rgb)
+                rgb_input = to_tensor(rgb_np)
+            elif not self.rgb_transform is None and self.use_sequence:
+                rgb_input = [torch.unsqueeze(to_tensor(self.rgb_transform(x)), dim=0) for x in rgb]
+                #print(rgb_input[0].shape)
+                rgb_input = torch.cat(rgb_input, dim=0)
+                #rgb_input = to_tensor(rgb_np)
             else:
                 raise (RuntimeError("transform not defined"))
-            rgb_input = to_tensor(rgb_np)
         
         out = None
         out = torch.from_numpy(np.array(self.df.iloc[[index], :-1])), rgb_input
@@ -272,7 +303,7 @@ class TC_Dataloader(BaseDataset):
         # print(out)
         # print(label)
         # print(label.shape)
-        return out.float(), label.long()#.type(torch.LongTensor)
+        return (rgb_input, out.float()), label.long()#.type(torch.LongTensor)
     
     def __csv_only_return__(self, index):
         limit = index+1
@@ -294,17 +325,18 @@ class TC_Dataloader(BaseDataset):
         
         if self.use_sequence:
             out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
-           
-            label = label2idx(label)
-            label = torch.from_numpy(label)
+
+            if not self.use_col_as_label:
+                label = label2idx(label)
+                label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
                 pad_range = self.sequence_size-out.shape[0]
                 last_sequence_line = torch.unsqueeze(out[-1], dim=0)
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
-        
-        return out.float(), label.long()#.type(torch.LongTensor)
+         
+        return out, label#.type(torch.LongTensor)
     
     
     def __len__(self):

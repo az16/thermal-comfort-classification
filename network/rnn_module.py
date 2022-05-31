@@ -6,6 +6,7 @@ import torch
 import pytorch_lightning as pl
 from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
+from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
 
 
@@ -35,6 +36,9 @@ class TC_RNN_Module(pl.LightningModule):
                                                 shuffle=True, 
                                                 num_workers=cpu_count(), 
                                                 pin_memory=True)
+        #self.pmv_results = PMV_Results()
+        self.classification_loss = True
+        
         self.criterion = torch.nn.CrossEntropyLoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
@@ -63,14 +67,17 @@ class TC_RNN_Module(pl.LightningModule):
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=3)
         scheduler = {
             'scheduler': lr_scheduler,
-            'monitor': 'val_loss'
+            'monitor': 'val_acc'
         }
         return [optimizer], [scheduler]
 
     def forward(self, x):
+        # rgb, x = x
+        x = x.float()
+        # print(rgb.shape)
         out = self.model(x)
         return out
 
@@ -90,6 +97,8 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
+        if self.classification_loss:
+            y = y.long()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
         preds = torch.argmax(y_hat, dim=1)
@@ -116,7 +125,8 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
-        
+        if self.classification_loss:
+            y = y.long()
         loss = self.criterion(y_hat, y)
         preds = torch.argmax(y_hat, dim=1)
         self.acc_val(preds, y)
@@ -147,7 +157,8 @@ class TC_RNN_Module(pl.LightningModule):
         
         y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
         if gpu_mode: y_hat = y_hat.cuda()  
-        
+        if self.classification_loss:
+            y = y.long()
         loss = self.criterion(y_hat, y)
         # preds = torch.argmax(y_hat, dim=1)
         # self.acc_train(preds, y)

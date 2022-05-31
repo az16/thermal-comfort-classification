@@ -35,9 +35,9 @@ def get_random_prediciton_input(x, y, samples = 5):
     correct_label = []
     r,c = x.shape[0], x.shape[1]
     for i in range(samples):
-        idx = randint(0,r)
-        prediction_input.append(x[idx:idx+1])
-        correct_label.append(y[idx:idx+1])
+        #idx = randint(0,r)
+        prediction_input.append(x[i:i+1])
+        correct_label.append(y[i:i+1])
     
     return prediction_input, correct_label
     
@@ -46,17 +46,16 @@ if __name__ == "__main__":
     
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
-    parser.add_argument('--estimators', default=5, type=int, help='Number of estimators.')
-    parser.add_argument('--depth', default=32, type=int, help='Max depth for tree descend.')
+    parser.add_argument('--estimators', default=20, type=int, help='Number of estimators.')
+    parser.add_argument('--depth', default=16, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     
     args = parser.parse_args()
     
     params_grid = {
-                 'n_estimators': [20],
-                 'max_depth': [16],
-                 'max_features': ["log2"]}
+                 'n_estimators': [100,200,300],
+                 'max_depth': [64,100]}
     
     label_mapping = {-3:"Cold",
                      -2:"Cool",
@@ -68,28 +67,31 @@ if __name__ == "__main__":
     
     
     dataset = TC_Dataloader()
+    #x, y = dataset.splits()
     
     x_t, y_t, x_v, y_v = dataset.splits()
     x_v, x_test = x_v[:int(x_v.shape[0]/2)], x_v[int(x_v.shape[0]/2):]
     y_v, y_test = y_v[:int(y_v.shape[0]/2)], y_v[int(y_v.shape[0]/2):]
-    #print(x_v.shape, x_test.shape)
+    x_v = x_v.sample(frac=1).reset_index(drop=True)
+    y_v = y_v.sample(frac=1).reset_index(drop=True)
+    
     feature_names = dataset.independent
     #label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]
     label_names = [-3,-2,-1,0,1,2,3]    
     
-    print("Features: {0}".format(x_t.shape[1]))
-    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, max_features=x_t.shape[1], cv=False)
+    #print("Features: {0}".format(x_t.shape[1]))
+    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, cv=False)
     clf = model.rf
     
     # print(cross_val_score(clf, x_t, y_t, scoring="accuracy", cv=10))
-    # grid_clf = GridSearchCV(clf, params_grid, cv=10, return_train_score=True, verbose=5)
-    # grid_clf.fit(x_t, y_t)  
+    # grid_clf = GridSearchCV(clf, params_grid, cv=3, return_train_score=True, verbose=5)
+    # grid_clf.fit(x, y)  
     model.fit(x_t,y_t)
     
     # print("Model fitting done. Testing ..")
     
     # # model = grid_clf.best_estimator_
-    # # print("Best params: {0}".format(grid_clf.best_params_))
+    #print("Best params: {0}".format(grid_clf.best_params_))
     # # print("Grid search results: {0}".format(grid_clf.cv_results_))
     
     preds_train = model.predict(x_t)

@@ -1,7 +1,7 @@
 
 from PIL import Image
 from pythermalcomfort.models import pmv_ppd
-from pythermalcomfort.utilities import v_relative, clo_dynamic
+from pythermalcomfort.utilities import v_relative, clo_dynamic, met_typical_tasks
 import scipy.ndimage.interpolation as itpl
 from sklearn.preprocessing import StandardScaler
 import cv2 
@@ -64,7 +64,8 @@ types_sk = dict({
             "Ambient_Temperature" : np.float32,
             "Ambient_Humidity" : np.float32,
             "Emotion-ML" : str,
-            "Label" : np.float32})
+            "Label" : np.float32,
+            "RGB_Frontal_View": np.float64})
 
 header = ["Timestamp",
           "Age",
@@ -110,11 +111,9 @@ image_only = ["RGB_Frontal_View"]
 
 
     
-def rgb_loader(root, file):
-    # does not work with anything other than path parameter
-    #TODO: implement sequence loading in case of RNN dataloading
-    assert os.path.exists(file), "file not found: {}".format(root + file)
-    return np.asarray(Image.open(file).convert('RGB'), dtype=np.uint8)
+def rgb_loader(paths):
+    #assert os.path.exists(file), "file not found: {}".format(root + file)
+    return [np.asarray(Image.open(file).convert('RGB'), dtype=np.uint8) for file in paths]
 
 def one_hot(sample, classes=3):
     r = np.zeros((sample.size, classes))
@@ -128,8 +127,10 @@ def to_keypoint(sample):
     return sample
 
 def to_tensor(img):
+    # if img.ndim == 4:
+    #     img = torch.from_numpy(img.transpose((0, 3, 1, 2)).copy()) #return sequence of 3-channel torch tensors
     if img.ndim == 3:
-        img = torch.from_numpy(img.transpose((2, 0, 1)).copy())
+        img = torch.from_numpy(img.transpose((2, 0, 1)).copy()) #return single 3-channel torch tensor
     elif img.ndim == 2:
         img = torch.from_numpy(img.copy())
     
@@ -168,33 +169,51 @@ def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
 def no_answer_mask(frame):
     return (frame != "No Answer")
 
+def check_pmv_vars(columns):
+    required = ["PCE-Ambient-Temp", "Radiation-Temp", "Clothing-Level", "Ambient_Humidity"]
+    for col in required:
+        if not col in columns:
+            return False 
+    
+    return True
+
 # TODO: cite pythermal creators
-def pmv(p_vars, t_a, rh_a):
-    tdb = t_a 
-    tr = p_vars[:,0]
-    icl = p_vars[:1]
-    v = p_vars[:,2]
-    rh = rh_a * 100.0
-    met = p_vars[:,3]
+def pmv(radiation, clothing, t_a, rh_a):
+    
+    #print(rh_a)
+    # col_length = len(t_a)
+    tdb = t_a.values 
+    tr = radiation.values
+    icl = clothing.values
+    v = np.ones(t_a.shape)*0.1
+    rh = rh_a.values
+    met = np.ones(t_a.shape)
     
     vr = v_relative(v, met)
-    clo = clo_dynamic(icl, met)
+    #clo = clo_dynamic(icl, met)
+    #print(tdb[0], tr[0], vr[0], rh[0], met[0], icl[0])
     
-    return np.array([pmv_ppd(tdb[x], tr[x], vr[x], rh[x], met[x], clo[x])["pmv"] for x in range(p_vars.shape[0])])
+    pmv = pmv_ppd(tdb, tr, vr, rh, met, icl, standard="ASHRAE")["pmv"]
+    #print(np.isnan(pmv).any())
+    #print(pmv_ppd(tdb[0], tr[0], vr[0], rh[0], met[0], icl[0], standard="ASHRAE")["pmv"])
+    #print(pmv)
+    #return np.array([pmv_ppd(tdb[x], tr[x], vr[x], rh[x], met[x], clo[x])["pmv"] for x in range(0, col_length)])
+    return pmv
 
-def rotate(angle, img, reshape=False, prefilter=False, order=0):
-    return itpl.rotate(img, angle, reshape, prefilter, order)
+def rotate(angle, imgs, reshape=False, prefilter=False, order=0):
+    imgs = itpl.rotate(imgs, angle, reshape=reshape, prefilter=prefilter, order=order)
+    return imgs
 
 def center_crop(img, output_size):
-    h = img.shape[0]
-    w = img.shape[1]
+    h = img.shape[1]
+    w = img.shape[2]
     th, tw = output_size
     i = int(round((h - th) / 2.))
     j = int(round((w - tw) / 2.))
     return img[i:i+h, j:j+w, :]
 
 def horizontal_flip(img, do_flip):
-    if do_flip: return np.fliplr(img)
+    if do_flip: return np.fliplr(img[:,])
     else: return img 
 
 def augmentation(x, val=False):
@@ -273,7 +292,7 @@ operations = dict({
             "Radiation-Temp": norm,
             "PCE-Ambient-Temp": norm,
             "Clothing-Level": place_holder,
-            "RGB_Frontal_View": make_full_path,
+            "RGB_Frontal_View": place_holder,
             "Nose": to_keypoint,
             "Neck": to_keypoint,
             "RShoulder": to_keypoint,
@@ -323,7 +342,8 @@ params = dict({
             "Ambient_Humidity" : [0.0, 100.0],
             "Emotion-ML" : [7],
             "Emotion-Self" : [6],
-            "Label":[]})
+            "Label":[],
+            "RGB_Frontal_View":[]})
 
 
 
@@ -344,6 +364,8 @@ def label2idx(label):
 
 
 if __name__ == "__main__":
-    test = np.array([1,2,3,2,3])
-    oh = one_hot(test, classes=4)
-    print(oh)
+    # test = np.array([1,2,3,2,3])
+    # oh = one_hot(test, classes=4)
+    # print(oh)
+    
+    print(pmv_ppd(18.0, 17.8, 0.1, 55.0, 1.0, 0.57, standard="ASHRAE")["pmv"])
