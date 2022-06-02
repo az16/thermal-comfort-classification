@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
-    parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/dataset/rgb/tcs_study/', help='Path to training images')
+    parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
     parser.add_argument('--layers', type=int, default=2, help='Hidden layers')
 
 
