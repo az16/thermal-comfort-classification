@@ -41,7 +41,7 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False, label_col=None):
+    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False, label_col=None):
         self.split = split 
         self.root = root 
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
@@ -62,6 +62,7 @@ class TC_Dataloader(BaseDataset):
         self.continuous_labels = continuous_labels
         self.metabolic = 1.0 #in met
         self.air_vel = 0.1 #in m/s
+        self.downsample = downsample
         
         assert not cols is None, "Specify which columns to use as inputs for training."
         print("Using these features: {0}".format(self.columns))
@@ -115,6 +116,8 @@ class TC_Dataloader(BaseDataset):
         #load .csv contents as list
         print("Loading contents..")
         self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
+        if not self.downsample is None:
+            self.df = self.df[self.df.index % self.downsample == 0] 
         if self.use_col_as_label:
             self.df.rename({self.col_label:"Label"})
         print("Creating data frames..")
