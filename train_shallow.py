@@ -1,18 +1,19 @@
-from cv2 import correctMatches
 from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
 from dataloaders.path import Path
 from argparse import ArgumentParser
-from network.learning_models import RandomForest, RandomForestRegressor
+from network.learning_models import RandomForest
 from dataloaders.sklearn_dataloader import TC_Dataloader
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import confusion_matrix, accuracy_score
 import pandas as pd
 import numpy as np
-from metrics import visualize_feature_importance, accuracy_score
+from metrics import visualize_feature_importance, accuracy_score, top_k_accuracy_score
 from random import randint
-
-
+from sklearn.linear_model import RidgeClassifierCV
+from sklearn.pipeline import make_pipeline
+from sktime.transformations.panel.rocket import Rocket
+from sktime.datatypes._panel._convert import from_2d_array_to_nested
 def clf_tree(x,y,label_names, name):
     #print(preds, labels)
     cfm = confusion_matrix(y, x, labels=label_names, normalize='true')
@@ -69,49 +70,63 @@ if __name__ == "__main__":
     dataset = TC_Dataloader()
     #x, y = dataset.splits()
     
-    x_t, y_t, x_v, y_v = dataset.splits()
-    x_v, x_test = x_v[:int(x_v.shape[0]/2)], x_v[int(x_v.shape[0]/2):]
-    y_v, y_test = y_v[:int(y_v.shape[0]/2)], y_v[int(y_v.shape[0]/2):]
-    x_v = x_v.sample(frac=1).reset_index(drop=True)
-    y_v = y_v.sample(frac=1).reset_index(drop=True)
+    x_t, y_t, x_v, y_v, x_test, y_test = dataset.splits()
+    # X_train, y_train = load_basic_motions(split="train", return_X_y=True)
+    #print(x_t)
+    # x_v, x_test = x_v[:int(x_v.shape[0]/2)], x_v[int(x_v.shape[0]/2):]
+    # y_v, y_test = y_v[:int(y_v.shape[0]/2)], y_v[int(y_v.shape[0]/2):]
+    # x_v = x_v.sample(frac=1).reset_index(drop=True)
+    # y_v = y_v.sample(frac=1).reset_index(drop=True)
     
-    feature_names = dataset.independent
+    #feature_names = dataset.independent
     #label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]
     label_names = [-3,-2,-1,0,1,2,3]    
     
+    rocket_pipeline = make_pipeline(Rocket(), RidgeClassifierCV(alphas=np.logspace(-3, 3, 10), normalize=True))
+    rocket_pipeline.fit(from_2d_array_to_nested(x_t), y_t.to_frame())
+    rocket_pipeline.score(from_2d_array_to_nested(x_v), y_v)
+    rocket_pipeline.score(from_2d_array_to_nested(x_test), y_test)
+    
+    
+    
+    
+    
+    
     #print("Features: {0}".format(x_t.shape[1]))
-    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, cv=False)
-    clf = model.rf
+    # model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, cv=False)
+    # clf = model.rf
     
-    # print(cross_val_score(clf, x_t, y_t, scoring="accuracy", cv=10))
-    # grid_clf = GridSearchCV(clf, params_grid, cv=3, return_train_score=True, verbose=5)
-    # grid_clf.fit(x, y)  
-    model.fit(x_t,y_t)
+    # #print(cross_val_score(clf, x_v, y_v, scoring="accuracy", cv=5))
+    # # grid_clf = GridSearchCV(clf, params_grid, cv=3, return_train_score=True, verbose=5)
+    # # grid_clf.fit(x, y)  
+    # model.fit(x_t,y_t)
     
-    # print("Model fitting done. Testing ..")
+    # # print("Model fitting done. Testing ..")
     
-    # # model = grid_clf.best_estimator_
-    #print("Best params: {0}".format(grid_clf.best_params_))
-    # # print("Grid search results: {0}".format(grid_clf.cv_results_))
+    # # # model = grid_clf.best_estimator_
+    # #print("Best params: {0}".format(grid_clf.best_params_))
+    # # # print("Grid search results: {0}".format(grid_clf.cv_results_))
     
-    preds_train = model.predict(x_t)
-    preds_val = model.predict(x_v)
+    # preds_train = model.predict(x_t)
+    # preds_val = model.predict(x_v)
+    # # print(y_v.values)
+    # # print(preds_val)
+    # print("Train accuracy: {0}".format(accuracy_score(preds_train,y_t)))
+    # print("Validation top_1_accuracy: {0}".format(accuracy_score(preds_val, y_v)))
+    # #print("Validation top_2_accuracy: {0}".format(top_k_accuracy_score(y_v, preds_val, k=2)))
+    # clf_tree(preds_train, y_t, label_names, "train classifier")
+    # clf_tree(preds_val, y_v, label_names, "test classifier")
+    # print("Computing feature importance")
+    # # feature_importance = model.feature_importances()
+    # # print(feature_importance)
+    # # visualize_feature_importance(feature_importance, feature_names)
     
-    print("Train accuracy: {0}".format(accuracy_score(preds_train,y_t)))
-    print("Test accuracy: {0}".format(accuracy_score(preds_val,y_v)))
-    clf_tree(preds_train, y_t, label_names, "train classifier")
-    clf_tree(preds_val, y_v, label_names, "test classifier")
-    print("Computing feature importance")
-    # feature_importance = model.feature_importances()
-    # print(feature_importance)
-    # visualize_feature_importance(feature_importance, feature_names)
+    # r_i, r_l = get_random_prediciton_input(x_test, y_test)
     
-    r_i, r_l = get_random_prediciton_input(x_test, y_test)
-    
-    print("Testing on random inputs from dataset..")
-    for i in range(0,len(r_i)):
-        tmp_i, tmp_l = r_i[i], label_mapping[r_l[i].values[0]]
-        pred = label_mapping[model.predict(tmp_i)[0]]
-        print("Input: {0}\r\nModel prediction: {1}\r\nActual label: {2}".format(tmp_i, pred, tmp_l))
+    # print("Testing on random inputs from dataset..")
+    # for i in range(0,len(r_i)):
+    #     tmp_i, tmp_l = r_i[i], label_mapping[r_l[i].values[0]]
+    #     pred = label_mapping[model.predict(tmp_i)[0]]
+    #     print("Input: {0}\r\nModel prediction: {1}\r\nActual label: {2}".format(tmp_i, pred, tmp_l))
     
     

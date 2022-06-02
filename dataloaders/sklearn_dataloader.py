@@ -118,7 +118,7 @@ class TC_Dataloader():
         split = "training"
         print("Searching for {0} files..".format(split))
         train_file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "no_test")) as file:
+        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "80")) as file:
             lines = file.readlines()
             train_file_names = [line.rstrip() for line in lines]
         assert len(train_file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
@@ -128,8 +128,19 @@ class TC_Dataloader():
         
         split = "validation"
         print("Searching for {0} files..".format(split))
+        val_file_names = [] #os.listdir(Path.db_root_dir("tcs"))
+        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "80")) as file:
+            lines = file.readlines()
+            val_file_names = [line.rstrip() for line in lines]
+        assert len(val_file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
+            
+        val_file_names = [Path.db_root_dir("tcs")+x for x in val_file_names]
+        print("Found {0} {1} files at {2}".format(len(val_file_names),split,Path.db_root_dir("tcs")))
+        
+        split = "test"
+        print("Searching for {0} files..".format(split))
         test_file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "no_test")) as file:
+        with open("./dataloaders/splits/{0}_{1}.txt".format(split, "80")) as file:
             lines = file.readlines()
             test_file_names = [line.rstrip() for line in lines]
         assert len(test_file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
@@ -142,9 +153,10 @@ class TC_Dataloader():
         #load .csv contents as list
         print("Loading contents..")
         self.train_df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(train_file_names)])
+        self.val_df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(val_file_names)])
         self.test_df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(test_file_names)])
         print("Creating data frames..")
-        print(len(self.train_df))
+        #print(len(self.train_df))
         data_type_dict = dict({})
         #print(types_sk.keys())
         for key in self.columns:
@@ -152,10 +164,12 @@ class TC_Dataloader():
             data_type_dict.update({key: types_sk[key]})
         
         self.train_df.astype(data_type_dict)
+        self.val_df.astype(data_type_dict)
         self.test_df.astype(data_type_dict)
         #print(self.train_df)
         #shuffle
-        #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+        #self.train_df = self.train_df.sample(frac=100).reset_index(inplace=True, drop=True)
+        #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
         #self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
         
         if "Gender" in self.columns or "Bodyfat" in self.columns:
@@ -163,8 +177,10 @@ class TC_Dataloader():
         
         #print(self.train_df)
         self.train_X = self.train_df[self.independent]
+        self.val_X = self.val_df[self.independent]
         self.test_X = self.test_df[self.independent]
         self.train_Y = self.train_df[self.dependent]
+        self.val_Y = self.val_df[self.dependent]
         self.test_Y = self.test_df[self.dependent]
         
         print("Done.\r\n")
@@ -226,6 +242,10 @@ class TC_Dataloader():
             no_answer_test = ~no_answer_test
             self.test_df = self.test_df[no_answer_test]
             self.test_df = convert_str_nominal(self.test_df)
+            no_answer_val = self.val_df["Bodyfat"] == "No Answer"
+            no_answer_val = ~no_answer_val
+            self.val_df = self.val_df[no_answer_val]
+            self.val_df = convert_str_nominal(self.val_df)
         # print(np.array(self.train_df["Tiredness"]).dtype)
         # # self.train_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
         # # self.test_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
@@ -235,7 +255,7 @@ class TC_Dataloader():
     def splits(self):
         if self.full_set:
             return self.all_X, self.all_Y
-        return self.train_X, self.train_Y, self.test_X, self.test_Y 
+        return self.train_X, self.train_Y, self.val_X, self.val_Y, self.test_X, self.test_Y 
     
     
     

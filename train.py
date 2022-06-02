@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
 from network.regression_module import TC_MLP_Module
+from network.rcnn_module import TC_RCNN_Module
 
 if __name__ == "__main__":
     
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
-    parser.add_argument('--image_path', default='', help='Path to training images')
+    parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/dataset/rgb/tcs_study/', help='Path to training images')
     parser.add_argument('--layers', type=int, default=2, help='Hidden layers')
 
 
@@ -61,11 +62,7 @@ if __name__ == "__main__":
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
-    # module_dict = {"regression": TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
-    #                "rnn": TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout),
-    #                "cnn": None,
-    #                "rf":  None,
-    #                "custom": None,}
+
 
     trainer = pl.Trainer(
         fast_dev_run=args.dev,
@@ -95,7 +92,8 @@ if __name__ == "__main__":
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
     tc_module = None 
     if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers) 
+    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers)
+    elif args.module == "rcnn": tc_module = TC_RCNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path) 
     print(args)
     print("Using {0} lightning module.".format(args.module.upper()))
     #print(tc_module)

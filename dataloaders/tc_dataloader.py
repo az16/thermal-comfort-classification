@@ -1,3 +1,4 @@
+from sklearn.feature_extraction import img_to_graph
 from dataloaders.dataset import *
 from dataloaders.path import Path
 from tqdm import tqdm
@@ -41,7 +42,7 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=True, cols=None, image_path=None, use_imgs=False, label_col=None):
+    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None):
         self.split = split 
         self.root = root 
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
@@ -49,7 +50,7 @@ class TC_Dataloader(BaseDataset):
         self.output_size = output_size
         self.crop_size = crop_size
         self.use_imgs = use_imgs
-        self.img_path = "D:/tcs_study/frontal_participant_10_2022-04-28_15-35-18/"
+        self.img_path = image_path
         self.use_col_as_label = not label_col is None
         self.col_label = None 
         if self.use_col_as_label: self.col_label = label_col
@@ -63,7 +64,7 @@ class TC_Dataloader(BaseDataset):
         self.metabolic = 1.0 #in met
         self.air_vel = 0.1 #in m/s
         self.downsample = downsample
-        
+        #D:/tcs_study/frontal_participant_10_2022-04-28_15-35-18/
         assert not cols is None, "Specify which columns to use as inputs for training."
         print("Using these features: {0}".format(self.columns))
         
@@ -96,11 +97,11 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names = [] #os.listdir(Path.db_root_dir("tcs"))
-        with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
-            lines = file.readlines()
-            file_names = [line.rstrip() for line in lines]
-        assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
+        file_names =  [] #os.listdir(Path.db_root_dir("tcs"))
+        #with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
+        #     lines = file.readlines()
+        #     file_names = [line.rstrip() for line in lines]
+        # assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
             
         file_names = [Path.db_root_dir("tcs")+x for x in file_names]
         print("Found {0} {1} files at {2}".format(len(file_names),self.split,Path.db_root_dir("tcs")))
@@ -176,6 +177,7 @@ class TC_Dataloader(BaseDataset):
                 for key in self.columns:
                     if key in numeric_safe:
                         #if not (self.use_col_as_label and self.col_label == key):
+                        #print(noise(self.df[key].shape))
                         self.df[key] = self.df[key] + noise(self.df[key].shape)
 
                 if self.continuous_labels:

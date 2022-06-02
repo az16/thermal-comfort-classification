@@ -66,19 +66,19 @@ class RCNN(nn.Module):
         
         self.feature_extractor.fc = Skip() #take resnet fully connected out
         
-        self.dropout= nn.Dropout(dropout) #regularization
+        self.dp_layer= nn.Dropout(dropout) #regularization
         self.lstm = nn.LSTM(num_features, hidden, n_layers, batch_first=True)#rnn
         if n_layers > 1:
             self.lstm = nn.LSTM(num_features, hidden, n_layers, batch_first=True, dropout=dropout)
             
-        self.fc = nn.Linear(hidden, num_classes)
+        self.fc1 = nn.Linear(hidden, hidden//2)
+        self.fc2 = nn.Linear(hidden//2, num_classes)
         
-        self.activation = nn.Softmax(dim=1) #Softmax activation with 7 classes 
+        #self.activation = nn.Softmax(dim=1) #Softmax activation with 7 classes 
         
     def forward(self, x):
-        rgb = x[0]
+        rgb, numeric = x
         _, S, _, _, _ = rgb.shape
-        numeric = x[1]
         
         #Use resnet feature extractor to create sequence of features --> shape: B, S, self.feature_extractor.output_size
         tmp = [torch.unsqueeze(torch.cat((self.feature_extractor(rgb[:,i]), numeric[:,i]), dim=1), dim=1) for i in range(0,S)]
@@ -87,10 +87,12 @@ class RCNN(nn.Module):
         self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
         _, (h_t, _) = self.lstm(tmp)
         x = h_t[-1]
-        if self.n_layers > 1:
-            x = self.dropout(x)
-        x = self.fc(x)
-        x = self.activation(x)
+        if self.n_layers == 1:
+            x = self.dp_layer(x)
+        x = self.fc1(x)
+        x = self.dp_layer(x)
+        x = self.fc2(x)
+        #x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
     

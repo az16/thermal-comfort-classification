@@ -105,6 +105,23 @@ def visualize_feature_importance(feature_imp, feature_names):
 def accuracy_score(preds, labels):
     return metrics.accuracy_score(labels,preds)
 
+def top_k_accuracy_score(preds, labels, k=2, normalize=True):
+    k_l = k-1
+    total = len(labels)
+    correct = 0
+    i = 0
+    for l in labels:
+        y_hat = preds.values[i]
+        if l in [x for x in range(y_hat-k_l,y_hat+k)]:
+            #print(l,y_hat)
+            correct += 1
+    
+    if normalize:
+        return correct/total 
+    return correct
+        
+        
+
 def rmse(preds, targets):
     B = 1
     try: B = preds.shape[0]
