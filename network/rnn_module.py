@@ -1,7 +1,7 @@
 from multiprocessing import cpu_count
 from torchmetrics import Accuracy
 from metrics import rmse, mae, compute_confusion_matrix
-import pandas as pd
+import numpy as np 
 import torch
 import pytorch_lightning as pl
 from network.learning_models import RNN
@@ -66,12 +66,13 @@ class TC_RNN_Module(pl.LightningModule):
     def configure_optimizers(self):
         train_param = self.model.parameters()
         # Training parameters
-        optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=6)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hparams.learning_rate)
         scheduler = {
-            'scheduler': lr_scheduler,
-            'monitor': 'val_acc'
-        }
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.99999, self.global_step)),
+                'interval': 'step',
+                'frequency': 1,
+                'strict': True,
+            }
         return [optimizer], [scheduler]
 
     def forward(self, x):
