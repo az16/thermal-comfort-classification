@@ -1,4 +1,2 @@
-merged_log_participant_21_2022-05-06_17-13-44.csv
 merged_log_participant_5_2022-04-25_09-27-22.csv
 merged_log_participant_12_2022-04-29_13-44-14.csv
-merged_log_participant_13_2022-05-02_10-11-48.csv
