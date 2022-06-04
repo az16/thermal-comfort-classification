@@ -142,18 +142,21 @@ class TC_Dataloader(BaseDataset):
         performs preprocessing steps like data cleaning, one-hot-encoding
         and normalization to [0,1]
         """
-        if self.preprocessing_config is None: return
         print("Pre-processing..")
         masks = []
         if not self.columns == image_only:
             #Load types
+            print("Converting .csv strings into correct dtypes..")
             data_type_dict = dict({})
             for key in self.columns:
                 data_type_dict.update({key: types[key]})
             
             #Assign correct types for specified columns
             self.df.astype(data_type_dict)
-            
+        
+            if not self.preprocessing_config: return
+        
+            print("Outlier removal..")
             #data cleaning (outlier removal + removal of empty columns)
             for key in self.columns:
                 if key in optional:
@@ -172,21 +175,22 @@ class TC_Dataloader(BaseDataset):
             #    self.df["pmv_index"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["PCE-Ambient-Temp"], self.df["Ambient_Humidity"])
             
             #normalize where necessary
-            if self.augment_data:
-                print("Augmenting data..")
-                for key in self.columns:
-                    if key in numeric_safe:
-                        #if not (self.use_col_as_label and self.col_label == key):
-                        #print(noise(self.df[key].shape))
-                        self.df[key] = self.df[key] + noise(self.df[key].shape)
+        if self.augment_data:
+            print("Augmenting data..")
+            for key in self.columns:
+                if key in numeric_safe:
+                    #if not (self.use_col_as_label and self.col_label == key):
+                    #print(noise(self.df[key].shape))
+                    self.df[key] = self.df[key] + noise(self.df[key].shape)
 
-                if self.continuous_labels:
-                    print("Using continuous labels.")
-                    self.df["Label"] = self.df["Label"] + noise(self.df["Label"], masked=True)
+        if self.continuous_labels:
+            print("Using continuous labels.")
+            self.df["Label"] = self.df["Label"] + noise(self.df["Label"], masked=True)
                 
             
         
         if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
+            print("Normalizing..")
             for key in self.columns:
                 #if not (self.use_col_as_label and self.col_label == key):
                 func = operations[key]

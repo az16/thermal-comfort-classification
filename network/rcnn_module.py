@@ -1,7 +1,7 @@
 from multiprocessing import cpu_count
 from torchmetrics import Accuracy
 from metrics import rmse, mae, compute_confusion_matrix
-import pandas as pd
+import numpy as np
 import torch
 import pytorch_lightning as pl
 from network.learning_models import RCNN
@@ -13,7 +13,7 @@ from dataloaders.path import *
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RCNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, preprocess, augmentation, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
@@ -21,17 +21,17 @@ class TC_RCNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, data_augmentation=True, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=True, 
                                                 num_workers=cpu_count(), 
@@ -66,12 +66,13 @@ class TC_RCNN_Module(pl.LightningModule):
     def configure_optimizers(self):
         train_param = self.model.parameters()
         # Training parameters
-        optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=4)
+        optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
         scheduler = {
-            'scheduler': lr_scheduler,
-            'monitor': 'val_acc'
-        }
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.99999, self.global_step)),
+                'interval': 'step',
+                'frequency': 1,
+                'strict': True,
+            }
         return [optimizer], [scheduler]
 
     def forward(self, x):

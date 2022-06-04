@@ -5,29 +5,30 @@ from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.path import *
 from metrics import MetricLogger, rmse, mae
 from multiprocessing import cpu_count
+import numpy as np
 
 
 gpu_mode=False
 
 class TC_MLP_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, preprocess, augmentation, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
         self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=True, continuous_labels=True, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, data_augmentation=augmentation, continuous_labels=True, cols=mask),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=True, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(),
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, continuous_labels=True, cols=mask),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=cpu_count(),
@@ -52,12 +53,13 @@ class TC_MLP_Module(pl.LightningModule):
     def configure_optimizers(self):
         train_param = self.model.parameters()
         # Training parameters
-        optimizer = torch.optim.AdamW(train_param, lr=self.hparams.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+        optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
         scheduler = {
-            'scheduler': lr_scheduler,
-            'monitor': 'val_loss'
-        }
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.99999, self.global_step)),
+                'interval': 'step',
+                'frequency': 1,
+                'strict': True,
+            }
         return [optimizer], [scheduler]
 
     def forward(self, x):
