@@ -154,19 +154,19 @@ class TC_Dataloader(BaseDataset):
             #Assign correct types for specified columns
             self.df.astype(data_type_dict)
         
-            if not self.preprocessing_config: return
+            if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
         
-            print("Outlier removal..")
-            #data cleaning (outlier removal + removal of empty columns)
-            for key in self.columns:
-                if key in optional:
-                    masks.append(no_answer_mask(self.df[key]))
-                elif key in numeric_safe:
-                    masks.append(clean(self.df[key])) 
-            
-            if len(masks) > 0:
-                full_mask = make_mask(tuple(masks))
-                self.df = self.df.loc[full_mask, :]
+                print("Outlier removal..")
+                #data cleaning (outlier removal + removal of empty columns)
+                for key in self.columns:
+                    if key in optional:
+                        masks.append(no_answer_mask(self.df[key]))
+                    elif key in numeric_safe:
+                        masks.append(clean(self.df[key])) 
+                
+                if len(masks) > 0:
+                    full_mask = make_mask(tuple(masks))
+                    self.df = self.df.loc[full_mask, :]
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
