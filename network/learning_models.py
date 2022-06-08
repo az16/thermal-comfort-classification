@@ -121,7 +121,8 @@ class RandomForest():
     
     def weight_func(self, x):
         return 0.1*(x**2)+1.0
-    
+        #r = [2.0, 1.5, 1.0, 1.0, 1.0, 1.25, 1.5]
+        #return r[x+3]
     def weight_dict(self):
         weights = {-3: self.weight_func(-3),
                    -2: self.weight_func(-2),
