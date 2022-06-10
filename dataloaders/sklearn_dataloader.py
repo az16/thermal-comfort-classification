@@ -70,6 +70,17 @@ class TC_Dataloader():
             self.load_and_split()
         else:
             self.load_and_split_full()
+    
+    def narrow_labels(self, df):
+        #df = df[~df.Label==0]
+        df.loc[(df["Label"] > 1), "Label"] = 1
+        df.loc[(df["Label"] == -1), "Label"] = 0
+        # df.loc[(df["Label"] == 0), "Label"] = 0
+        df.loc[(df["Label"] == 1), "Label"] = 0
+        df.loc[(df["Label"] < -1), "Label"] = -1
+        return df
+        
+        
 
     def cross_validation(self):
         """
@@ -144,11 +155,19 @@ class TC_Dataloader():
             #self.test_df.astype(data_type_dict)
             #print(self.train_df)
             #shuffle
-            train_df = train_df[train_df.index % 26 == 0] 
-            #self.val_df = self.val_df[self.val_df.index % 26 == 0] 
-            #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-            #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
-            # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
+            # train_df = train_df[train_df.index % 24 == 0] 
+            # #self.val_df = self.val_df[self.val_df.index % 26 == 0] 
+            # #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
+            # #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
+            # # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
+            train_df = self.narrow_labels(train_df)
+            val_df = self.narrow_labels(val_df)
+            #features = self.independent
+            # for key in numeric_safe:
+            #     if key in self.columns:
+            # train_df, new_col = get_change_rate(train_df, "Ambient_Temperature")
+            # val_df, new_col = get_change_rate(val_df, "Ambient_Temperature")
+            # features.append(new_col)
             
             # if "Gender" in self.columns or "Bodyfat" in self.columns:
             #     self.preprocess()
@@ -196,6 +215,11 @@ class TC_Dataloader():
         #shuffle
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = pd.get_dummies(self.test_df)
+        
+        for key in numeric_safe:
+            if key in self.columns:
+                self.train_df, new_col = get_change_rate(self.train_df, key)
+                self.independent.append(new_col)
         
         #self.preprocess()
         

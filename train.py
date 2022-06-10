@@ -60,8 +60,8 @@ if __name__ == "__main__":
         save_top_k=1,
         dirpath="./checkpoints/{0}".format(args.module),
         filename='best-performance',
-        monitor='val_acc',
-        mode='max'
+        monitor='val_loss',
+        mode='min'
     )
 
     use_gpu = not args.gpus == 0

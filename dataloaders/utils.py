@@ -362,6 +362,20 @@ def label2idx(label):
     except:
         return np.array(label)
 
+def get_change_rate(df, name, look_ahead_window=1500):
+    col = df[name]
+    new_col_name = name+"_Delta"
+    processed = []
+    for i in range(len(col)):
+        if i < len(col)-look_ahead_window:
+            processed.append(abs(col[i]-col[i+look_ahead_window]))
+        else:
+            processed.append(abs(col[i]-col[-1]))
+    df[new_col_name] = processed 
+    #print(df)
+    return df, new_col_name
+            
+        
 
 if __name__ == "__main__":
     # test = np.array([1,2,3,2,3])

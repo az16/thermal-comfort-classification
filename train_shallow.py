@@ -43,25 +43,38 @@ def get_random_prediciton_input(x, y, samples = 10):
     
     return prediction_input, correct_label
 
-def cross_validate(x_splits_train, y_splits_train, x_splits_val, y_splits_val):
-    model = RandomForest(n_estimators=args.estimators, max_depth=args.depth, cv=False)
+def cross_validate(x_splits_train, y_splits_train, x_splits_val, y_splits_val, feature_names=[]):
+    model = RandomForest(n_estimators=args.estimators, max_depth=None, cv=False)
+    val_scores = []
     for i in range(len(x_splits_train)):
         x_t, y_t, x_v, y_v = x_splits_train[i], y_splits_train[i], x_splits_val[i], y_splits_val[i]
         model.fit(x_t,y_t)
-        preds_train = model.predict(x_t)
+        #preds_train = model.predict(x_t)
         preds_val = model.predict(x_v)
         # # # print(y_v.values)
         # # # print(preds_val)
-        print("Train accuracy: {0}".format(accuracy_score(preds_train,y_t)))
-        print("Validation top_1_accuracy: {0}".format(accuracy_score(preds_val, y_v)))
+        val_scores.append(accuracy_score(preds_val, y_v))
+        preds_val = model.predict(x_v)
+        # # # print(y_v.values)
+        # # # print(preds_val)
+        #print("Validation top_2_accuracy: {0}".format(top_k_accuracy_score(y_v, preds_val, k=2)))
+        clf_tree(preds_val, y_v, [-1,0,1], "test classifier")
+        #print("Train accuracy: {0}".format(accuracy_score(preds_train,y_t)))
+        #print("Validation top_1_accuracy: {0}".format(accuracy_score(preds_val, y_v)))
+        feature_importance = model.feature_importances()
+        #print(feature_importance)
+        visualize_feature_importance(feature_importance, feature_names, i=i)
+    
+    n = len(val_scores)
+    print("Mean validation accuracy: {0}".format(sum(val_scores)/n))
             
 
 if __name__ == "__main__":
     
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
-    parser.add_argument('--estimators', default=200, type=int, help='Number of estimators.')
-    parser.add_argument('--depth', default=11, type=int, help='Max depth for tree descend.')
+    parser.add_argument('--estimators', default=100, type=int, help='Number of estimators.')
+    parser.add_argument('--depth', default=12, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     
@@ -85,7 +98,7 @@ if __name__ == "__main__":
     dataset = TC_Dataloader(cv=True)
     #x, y = dataset.splits()
     x_t,y_t,x_v,y_v = dataset.splits()
-    cross_validate(x_t,y_t,x_v,y_v)
+    cross_validate(x_t,y_t,x_v,y_v, feature_names=dataset.independent)
     #x_t, y_t, x_v, y_v, x_test, y_test = dataset.splits()
     #x, y = pd.concat([x_t, x_v]), pd.concat([y_t, y_v])
     # y_t, y_v, y_test = y_t.to_numpy(), y_v.to_numpy(), y_test.to_numpy()

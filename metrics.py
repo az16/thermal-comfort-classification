@@ -89,7 +89,7 @@ def compute_confusion_matrix(preds, labels, label_names, current_epoch, context,
     #plt.close(fig)
     context.logger.experiment.add_figure("Confusion Matrix {0}".format(mode), fig, current_epoch)
 
-def visualize_feature_importance(feature_imp, feature_names):
+def visualize_feature_importance(feature_imp, feature_names, i=None):
     plt.rcParams["figure.figsize"] = [16,9]
     plt.rcParams.update({'font.size': 12})
     feature_imp = pd.Series(feature_imp, index=feature_names).sort_values(ascending=False)
@@ -99,7 +99,12 @@ def visualize_feature_importance(feature_imp, feature_names):
     plt.ylabel('Features')
     plt.title("Feature Importance Visualization")
     fig = m.get_figure()
-    fig.savefig("sklearn_logs/media/{0}.png".format("test"))
+    
+    if not i is None:
+        fig.savefig("sklearn_logs/media/{0}_{1}.png".format("tree_importance_scores", i))
+    else:
+        fig.savefig("sklearn_logs/media/{0}.png".format("test"))
+    
     plt.close(fig)
 
 def accuracy_score(preds, labels):
