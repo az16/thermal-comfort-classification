@@ -28,6 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--module', default='', help='The network module to be used for training')
+    parser.add_argument('--version', default='', help='Log directory name.')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
@@ -81,7 +82,7 @@ if __name__ == "__main__":
         # limit_train_batches=0.001,
         # limit_val_batches=0.001,
         max_epochs=args.max_epochs,
-        logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module),
+        logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module, version=args.version),
         callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
     )
 

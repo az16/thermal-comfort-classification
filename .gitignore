@@ -124,7 +124,7 @@ dmypy.json
 *.png
 
 #result folder
-tensorboard_logs/rnn/version*/
+tensorboard_logs/rnn/
 checkpoints/rnn/*.ckpt
 tensorboard_logs/rcnn/version*/
 checkpoints/rcnn/*.ckpt
