@@ -45,7 +45,7 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cv=False, split_size=0.8, by_file = True, full=False, cols=[   #"Clothing-Level",
+    def __init__(self, cv=False, split_size=0.8, by_file = False, full=False, cols=[   #"Clothing-Level",
                                                                             "Wrist_Skin_Temperature",
                                                                             #"Heart_Rate",
                                                                             #"GSR",
@@ -160,8 +160,8 @@ class TC_Dataloader():
             # #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
             # #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
             # # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
-            train_df = self.narrow_labels(train_df)
-            val_df = self.narrow_labels(val_df)
+            # train_df = self.narrow_labels(train_df)
+            # val_df = self.narrow_labels(val_df)
             #features = self.independent
             # for key in numeric_safe:
             #     if key in self.columns:
@@ -216,10 +216,10 @@ class TC_Dataloader():
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = pd.get_dummies(self.test_df)
         
-        for key in numeric_safe:
-            if key in self.columns:
-                self.train_df, new_col = get_change_rate(self.train_df, key)
-                self.independent.append(new_col)
+        # for key in numeric_safe:
+        #     if key in self.columns:
+        #         self.train_df, new_col = get_change_rate(self.train_df, key)
+        #         self.independent.append(new_col)
         
         #self.preprocess()
         
@@ -289,10 +289,15 @@ class TC_Dataloader():
         self.train_df.astype(data_type_dict)
         self.val_df.astype(data_type_dict)
         self.test_df.astype(data_type_dict)
+        
+        self.train_df["Ambient_Temperature_Delta"] = get_change_rate(self.train_df["Ambient_Temperature"])
+        self.val_df["Ambient_Temperature_Delta"] = get_change_rate(self.val_df["Ambient_Temperature"])
+        self.test_df["Ambient_Temperature_Delta"] = get_change_rate(self.test_df["Ambient_Temperature"])
+        self.independent.append("Ambient_Temperature_Delta")
         #print(self.train_df)
         #shuffle
-        self.train_df = self.train_df[self.train_df.index % 26 == 0] 
-        #self.val_df = self.val_df[self.val_df.index % 26 == 0] 
+        #self.train_df = self.train_df[self.train_df.index % 26 == 0] 
+        #self.val_df = self.val_df[self.val_df.index % 1000 == 0] 
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
@@ -336,6 +341,7 @@ class TC_Dataloader():
         
         self.full_df.astype(data_type_dict)
         limit = int(self.len * self.split_size)
+        self.full_df = self.full_df.sample(frac=1).reset_index(drop=True)
         self.train_df = self.full_df[0:limit]
         self.test_df = self.full_df[limit:]
         # print(self.train_df)
@@ -380,7 +386,10 @@ class TC_Dataloader():
     def splits(self):
         if self.full_set:
             return self.all_X, self.all_Y
-        return self.train_X, self.train_Y, self.val_X, self.val_Y#, self.test_X, self.test_Y 
+        elif self.by_file:
+            return self.train_X, self.train_Y, self.val_X, self.val_Y, self.test_X, self.test_Y 
+        else: 
+            return self.train_X, self.train_Y, self.test_X, self.test_Y 
     
     
     

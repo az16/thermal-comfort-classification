@@ -122,6 +122,7 @@ dmypy.json
 # JPG PNG
 *.jpg
 *.png
+*.csv
 
 #result folder
 tensorboard_logs/rnn/

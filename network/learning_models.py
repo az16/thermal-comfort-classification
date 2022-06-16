@@ -106,7 +106,7 @@ class RandomForest():
     def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True, max_features="log2"):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0)#, class_weight=self.weight_dict())
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, oob_score=True, class_weight=self.weight_dict())
         
     
     def fit(self, train_inputs, train_labels):
@@ -151,13 +151,29 @@ class RandomForestRegressor():
         return self.rf.predict(x)
 
 if __name__ == "__main__":
-    t1 = torch.randn((16,5,3,512,512))
-    t2 = torch.randn((16,5,4))
-    t = (t1,t2)
-    # t = torch.Tensor([1.9, 1.9, 1.1, 1.0, 1.4, 1.1, 1.4])
-    # print(t.shape)
-    # print(t)
-    m = RCNN(num_in_features=4)
-    r = m(t)
-    print(r.shape)
-    #print(r)
+    # t1 = torch.Tensor([0.8, 0.1, 0.05, 0.])
+    # t2 = torch.randn((16,5,4))
+    # t = (t1,t2)
+    # # t = torch.Tensor([1.9, 1.9, 1.1, 1.0, 1.4, 1.1, 1.4])
+    # # print(t.shape)
+    # # print(t)
+    # m = RCNN(num_in_features=4)
+    # r = m(t)
+    # print(r.shape)
+    # #print(r)
+    # Example of target with class indices
+    loss = nn.CrossEntropyLoss()
+    # input = torch.randn(3, 5, requires_grad=True)
+    # target = torch.empty(3, dtype=torch.long).random_(5)
+    # print(input)
+    # print(target)
+    # output = loss(input, target)
+    # print(output)
+    # output.backward()
+    # # Example of target with class probabilities
+    input = torch.randn(3, 5, requires_grad=True)
+    target = torch.randn(3, 5).softmax(dim=1)
+    print(input)
+    print(target)
+    output = loss(input, target)
+    print(output)

@@ -8,7 +8,7 @@ import cv2
 import pandas as pd
 import torch
 import numpy as np
-import os
+from tqdm import tqdm
 
 
 types = dict({
@@ -345,8 +345,6 @@ params = dict({
             "Label":[],
             "RGB_Frontal_View":[]})
 
-
-
 def emotion2Id(x):
     i=0
     for key in ["Angry", "Fear", "Disgust", "Neutral", "Surprise", "Happy", "Sad"]:
@@ -354,7 +352,6 @@ def emotion2Id(x):
         i += 1
     return x
     
-
 def label2idx(label):
     idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
     try:
@@ -362,18 +359,11 @@ def label2idx(label):
     except:
         return np.array(label)
 
-def get_change_rate(df, name, look_ahead_window=1500):
-    col = df[name]
-    new_col_name = name+"_Delta"
-    processed = []
-    for i in range(len(col)):
-        if i < len(col)-look_ahead_window:
-            processed.append(abs(col[i]-col[i+look_ahead_window]))
-        else:
-            processed.append(abs(col[i]-col[-1]))
-    df[new_col_name] = processed 
-    #print(df)
-    return df, new_col_name
+def get_change_rate(df, look_ahead_window=1000):
+    df = df.values
+    shifted = np.concatenate((df[look_ahead_window:], np.ones(look_ahead_window)*df[-1]))
+    change_rate = shifted-df
+    return change_rate
             
         
 

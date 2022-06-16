@@ -124,7 +124,23 @@ def top_k_accuracy_score(preds, labels, k=2, normalize=True):
     if normalize:
         return correct/total 
     return correct
-        
+
+def mean_accuracy(preds, labels):
+    n = len(preds)
+    correct = 0
+    for i in range(n):
+        if preds[i] == labels[i]:
+            correct += 1
+    
+    return correct/n
+
+def mean_absolute_error(preds, labels):
+    n = len(preds)
+    distance = 0
+    for i in range(n):
+        distance += np.abs(preds[i]-labels[i])
+    
+    return distance/n
         
 
 def rmse(preds, targets):
