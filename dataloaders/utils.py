@@ -3,7 +3,7 @@ from PIL import Image
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic, met_typical_tasks
 import scipy.ndimage.interpolation as itpl
-from sklearn.preprocessing import StandardScaler
+from itertools import permutations as p 
 import cv2 
 import pandas as pd
 import torch
@@ -322,7 +322,7 @@ params = dict({
             "Sport-Last-Hour": [],
             "Time-Since-Meal": [],
             "Tiredness": [9],
-            "Radiation-Temp": [10,40],
+            "Radiation-Temp": [],
             "PCE-Ambient-Temp": [10,40],
             "Clothing-Level": [],
             "Nose": [],
@@ -364,12 +364,20 @@ def get_change_rate(df, look_ahead_window=1000):
     shifted = np.concatenate((df[look_ahead_window:], np.ones(look_ahead_window)*df[-1]))
     change_rate = shifted-df
     return change_rate
+
+def feature_permutations(features, max_size=5):
+    pms = []
+    for i in range(2,max_size+1):
+        pms.extend(list(p(features, i)))
+    pms = list(set([tuple(sorted(x)) for x in pms]))
+    return pms
             
         
 
 if __name__ == "__main__":
-    # test = np.array([1,2,3,2,3])
-    # oh = one_hot(test, classes=4)
-    # print(oh)
+    f = ["clothing","ambient_temp","ambient_hum"]
     
-    print(pmv_ppd(18.0, 17.8, 0.1, 55.0, 1.0, 0.57, standard="ASHRAE")["pmv"])
+    tmp = feature_permutations(f)
+    print(len(tmp))
+    for i in range(len(tmp)):
+         print(list(tmp[i]))

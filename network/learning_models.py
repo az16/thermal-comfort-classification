@@ -106,7 +106,7 @@ class RandomForest():
     def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True, max_features="log2"):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, oob_score=True, class_weight=self.weight_dict())
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=True, verbose=0, class_weight="balanced", random_state=0, max_samples=500)
         
     
     def fit(self, train_inputs, train_labels):

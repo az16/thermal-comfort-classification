@@ -45,17 +45,16 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cv=False, split_size=0.8, by_file = False, full=False, cols=[   #"Clothing-Level",
-                                                                            "Wrist_Skin_Temperature",
-                                                                            #"Heart_Rate",
-                                                                            #"GSR",
-                                                                            "Radiation-Temp",
-                                                                            "Ambient_Humidity",
-                                                                            "Ambient_Temperature",
-                                                                            "Label"]):
+    def __init__(self, cv=False, split_size=0.8, by_file = False, full=False, cols=["Age","Gender","Weight","Height","Bodytemp","Sport-Last-Hour","Time-Since-Meal","Tiredness","Clothing-Level","Radiation-Temp",
+                                                                                                        "Ambient_Temperature",	
+                                                                                                        "Wrist_Skin_Temperature",
+                                                                                                        "Heart_Rate",
+                                                                                                        "GSR",
+                                                                                                        "Ambient_Humidity"]):
         self.columns = cols
+        self.columns.append("Label")
         self.independent = cols[:-1]
-        self.dependent = cols[-1]
+        self.dependent = "Label"
         self.full_set = full
         self.by_file = by_file
         self.split_size = split_size
@@ -152,11 +151,13 @@ class TC_Dataloader():
             
             train_df.astype(data_type_dict)
             val_df.astype(data_type_dict)
+            # train_df["Ambient_Temperature_Delta"] = get_change_rate(train_df["Ambient_Temperature"])
+            # val_df["Ambient_Temperature_Delta"] = get_change_rate(val_df["Ambient_Temperature"])
             #self.test_df.astype(data_type_dict)
             #print(self.train_df)
             #shuffle
-            # train_df = train_df[train_df.index % 24 == 0] 
-            # #self.val_df = self.val_df[self.val_df.index % 26 == 0] 
+            train_df = train_df[train_df.index % 24 == 0] 
+            val_df = val_df[val_df.index % 24 == 0] 
             # #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
             # #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
             # # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
@@ -170,11 +171,13 @@ class TC_Dataloader():
             # features.append(new_col)
             
             # if "Gender" in self.columns or "Bodyfat" in self.columns:
-            #     self.preprocess()
+            train_df = convert_str_nominal(train_df)
+            val_df = convert_str_nominal(val_df)
             self.train_splits_x.append(train_df[self.independent])
             self.train_splits_y.append(train_df[self.dependent])
             self.val_splits_x.append(val_df[self.independent])
             self.val_splits_y.append(val_df[self.dependent])
+        #self.independent.append("Ambient_Temperature_Delta")
         #print(self.train_df)
         self.train_X = self.train_splits_x
         self.val_X = self.val_splits_x
@@ -184,7 +187,6 @@ class TC_Dataloader():
         #self.test_Y = self.test_df[self.dependent]
         
         print("Done.\r\n")
-    
     
     def load_all(self):
         split = "training"
@@ -211,7 +213,7 @@ class TC_Dataloader():
         
         self.train_df.astype(data_type_dict)
         #self.test_df.astype(data_type_dict)
-        #self.train_df = self.train_df[self.train_df.index % 26 == 0] 
+        self.train_df = self.train_df[self.train_df.index % 26 == 0] 
         #shuffle
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = pd.get_dummies(self.test_df)
@@ -221,7 +223,7 @@ class TC_Dataloader():
         #         self.train_df, new_col = get_change_rate(self.train_df, key)
         #         self.independent.append(new_col)
         
-        #self.preprocess()
+        self.preprocess()
         
         #print(self.train_df)
         self.all_X = self.train_df[self.independent]
@@ -271,8 +273,8 @@ class TC_Dataloader():
         test_file_names = [Path.db_root_dir("tcs")+x for x in test_file_names]
         print("Found {0} {1} files at {2}".format(len(test_file_names),split,Path.db_root_dir("tcs")))
         
-        n = 2
-        skip_func = lambda x: x%n != 0
+        # n = 2
+        # skip_func = lambda x: x%n != 0
         #load .csv contents as list
         print("Loading contents..")
         self.train_df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(train_file_names)])
@@ -296,8 +298,9 @@ class TC_Dataloader():
         self.independent.append("Ambient_Temperature_Delta")
         #print(self.train_df)
         #shuffle
-        #self.train_df = self.train_df[self.train_df.index % 26 == 0] 
-        #self.val_df = self.val_df[self.val_df.index % 1000 == 0] 
+        self.train_df = self.train_df[self.train_df.index % 25 == 0] 
+        self.val_df = self.val_df[self.val_df.index % 25 == 0] 
+        #self.test_df = self.test_df[self.test_df.index % 25 == 0]
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)
         # self.test_df = self.test_df.sample(frac=1).reset_index(drop=True)
@@ -340,6 +343,8 @@ class TC_Dataloader():
             data_type_dict.update({key: types_sk[key]})
         
         self.full_df.astype(data_type_dict)
+        
+        self.full_df["Ambient_Temperature_Delta"] = get_change_rate(self.full_df["Ambient_Temperature"])
         limit = int(self.len * self.split_size)
         self.full_df = self.full_df.sample(frac=1).reset_index(drop=True)
         self.train_df = self.full_df[0:limit]
@@ -364,9 +369,9 @@ class TC_Dataloader():
         # self.train_df = emotion2Id(self.train_df).astype({"Emotion-ML": np.int64})
         # self.test_df = emotion2Id(self.test_df).astype({"Emotion-ML": np.int64})
         #print(self.train_df.columns.values.tolist())
-        no_answer_train = self.train_df["Bodyfat"] == "No Answer"
-        no_answer_train = ~no_answer_train
-        self.train_df = self.train_df[no_answer_train]
+        # no_answer_train = self.train_df["Bodyfat"] == "No Answer"
+        # no_answer_train = ~no_answer_train
+        # self.train_df = self.train_df[no_answer_train]
         self.train_df = convert_str_nominal(self.train_df)
         if not self.full_set:
             no_answer_test = self.test_df["Bodyfat"] == "No Answer"
@@ -383,13 +388,15 @@ class TC_Dataloader():
         # self.train_df["Emotion-ML"] = one_hot(np.array(self.train_df["Emotion-ML"]), classes=7)
         # self.test_df["Emotion-ML"] = one_hot(np.array(self.test_df["Emotion-ML"]), classes=7)
             
-    def splits(self):
-        if self.full_set:
-            return self.all_X, self.all_Y
+    def splits(self, mask=None):
+        if self.full_set and not mask is None:
+            return self.all_X[mask], self.all_Y
+        if self.full_set and mask is None:
+             return self.all_X, self.all_Y
         elif self.by_file:
             return self.train_X, self.train_Y, self.val_X, self.val_Y, self.test_X, self.test_Y 
         else: 
-            return self.train_X, self.train_Y, self.test_X, self.test_Y 
+            return self.train_X, self.train_Y, self.val_X, self.val_Y 
     
     
     
