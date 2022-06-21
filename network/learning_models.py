@@ -84,7 +84,7 @@ class RCNN(nn.Module):
         tmp = [torch.unsqueeze(torch.cat((self.feature_extractor(rgb[:,i]), numeric[:,i]), dim=1), dim=1) for i in range(0,S)]
         tmp = torch.cat(tmp, dim=1)
 
-        self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
+        #self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
         _, (h_t, _) = self.lstm(tmp)
         x = h_t[-1]
         if self.n_layers == 1:
@@ -103,10 +103,11 @@ class Skip(nn.Module):
         return x    
 
 class RandomForest():
-    def __init__(self, n_estimators=None, max_depth=None, critirion='gini', bootstrap=True, cv=True, max_features="log2"):
+    def __init__(self, n_estimators=500, max_depth=6, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
         self.rf = RandomForestClassifier()
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=True, verbose=0, class_weight="balanced", random_state=0, max_samples=500)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,
+                                             random_state=0, max_samples=525)
         
     
     def fit(self, train_inputs, train_labels):
