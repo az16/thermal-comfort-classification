@@ -116,8 +116,8 @@ def top_k_accuracy_score(preds, labels, k=2, normalize=True):
     correct = 0
     i = 0
     for l in labels:
-        y_hat = preds.values[i]
-        if l in [x for x in range(y_hat-k_l,y_hat+k)]:
+        y_hat = preds[i]
+        if l in [x for x in range(y_hat-k_l,y_hat+k+1)]:
             #print(l,y_hat)
             correct += 1
     
@@ -137,6 +137,7 @@ def mean_accuracy(preds, labels):
 def mean_absolute_error(preds, labels):
     n = len(preds)
     distance = 0
+    labels = labels.values
     for i in range(n):
         distance += np.abs(preds[i]-labels[i])
     
