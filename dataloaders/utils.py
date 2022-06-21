@@ -322,7 +322,7 @@ params = dict({
             "Sport-Last-Hour": [],
             "Time-Since-Meal": [],
             "Tiredness": [9],
-            "Radiation-Temp": [],
+            "Radiation-Temp": [10,40],
             "PCE-Ambient-Temp": [10,40],
             "Clothing-Level": [],
             "Nose": [],
@@ -338,7 +338,7 @@ params = dict({
             "Heart_Rate" : [40, 130],
             "Wrist_Skin_Temperature" : [],
             "GSR" : [],
-            "Ambient_Temperature" : [],
+            "Ambient_Temperature" : [10,40],
             "Ambient_Humidity" : [0.0, 100.0],
             "Emotion-ML" : [7],
             "Emotion-Self" : [6],
@@ -371,7 +371,19 @@ def feature_permutations(features, max_size=5):
         pms.extend(list(p(features, i)))
     pms = list(set([tuple(sorted(x)) for x in pms]))
     return pms
-            
+
+def weight_func(x):
+        return 0.1*(x**2)+1.0
+       
+def weight_dict():
+    weights = {-3: weight_func(-3),
+                -2: weight_func(-2),
+                -1: weight_func(-1),
+                0: weight_func(0),
+                1: weight_func(1),
+                2: weight_func(2),
+                3: weight_func(3)}
+    return weights
         
 
 if __name__ == "__main__":
