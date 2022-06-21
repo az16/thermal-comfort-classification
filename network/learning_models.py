@@ -84,7 +84,7 @@ class RCNN(nn.Module):
         tmp = [torch.unsqueeze(torch.cat((self.feature_extractor(rgb[:,i]), numeric[:,i]), dim=1), dim=1) for i in range(0,S)]
         tmp = torch.cat(tmp, dim=1)
 
-        #self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
+        self.lstm.flatten_parameters() #use multi GPU capabilities for lstm
         _, (h_t, _) = self.lstm(tmp)
         x = h_t[-1]
         if self.n_layers == 1:
