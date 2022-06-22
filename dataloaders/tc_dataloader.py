@@ -207,9 +207,9 @@ class TC_Dataloader(BaseDataset):
             self.df.pop("RGB_Frontal_View")
             self.img_list = paths
         
-        for col in self.columns:
-            print(self.df[col])
-            print(self.df[col].values.dtype)
+        # for col in self.columns:
+        #     print(self.df[col])
+        #     print(self.df[col].values.dtype)
             
         print("Pre-processing done!\r\n")
     
