@@ -102,7 +102,7 @@ header = ["Timestamp",
           "Ambient_Humidity",
           "Label"]
 
-numeric_safe = ["PCE-Ambient_Temp", "Radiant-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Humidity"]
+numeric_safe = ["Ambient_Temperature", "Radiation-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Humidity"]
 numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bodyfat"]
 categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
@@ -329,7 +329,7 @@ params = dict({
             "Sport-Last-Hour": [],
             "Time-Since-Meal": [],
             "Tiredness": [9],
-            "Radiation-Temp": [10,40],
+            "Radiation-Temp": [15,35],
             "PCE-Ambient-Temp": [10,40],
             "Clothing-Level": [],
             "Nose": [],
@@ -351,6 +351,7 @@ params = dict({
             "Emotion-Self" : [6],
             "Label":[],
             "RGB_Frontal_View":[]})
+
 
 def emotion2Id(x):
     i=0
