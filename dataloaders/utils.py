@@ -345,7 +345,7 @@ params = dict({
             "Heart_Rate" : [40, 130],
             "Wrist_Skin_Temperature" : [],
             "GSR" : [],
-            "Ambient_Temperature" : [10,40],
+            "Ambient_Temperature" : [15,40],
             "Ambient_Humidity" : [0.0, 100.0],
             "Emotion-ML" : [7],
             "Emotion-Self" : [6],
