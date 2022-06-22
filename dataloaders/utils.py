@@ -16,7 +16,7 @@ types = dict({
             "Gender" : str,
             "Weight": np.float32,
             "Height": np.float32,
-            "Bodyfat:": str,
+            "Bodyfat": str,
             "Bodytemp": np.float32,
             "Sport-Last-Hour": np.int64,
             "Time-Since-Meal": str,
@@ -104,7 +104,7 @@ header = ["Timestamp",
 
 numeric_safe = ["PCE-Ambient_Temp", "Radiant-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Humidity"]
 numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bodyfat"]
-categorical = ["Gender", "Tiredness", "Emotion-ML", "Emotion-Self"]
+categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
 optional = ["Weight", "Height", "Bodyfat"]
 image_only = ["RGB_Frontal_View"]
@@ -166,8 +166,10 @@ def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
     mask = np.logical_and(mask_u, mask_l)
     return mask
 
-def no_answer_mask(frame):
-    return (frame != "No Answer")
+def no_answer_mask(frame, col=False):
+    if not col:
+        return (frame != "No Answer")
+    
 
 def check_pmv_vars(columns):
     required = ["PCE-Ambient-Temp", "Radiation-Temp", "Clothing-Level", "Ambient_Humidity"]
@@ -248,7 +250,12 @@ def make_mask(list_of_masks):
     
     return init 
 
-def convert_str_nominal(x):
+def convert_str_nominal(x, column=False):
+    if column:
+        #col = x.values
+        #tmp = x == "Female"
+        
+        return (x == "Female").astype(np.int8).astype(np.float64)
     i=0
     for key in ["Male", "Female"]:
         x.loc[(x["Gender"] == key), "Gender"] = i
@@ -281,10 +288,10 @@ def load_resized(out_size, df):
 
 operations = dict({
             "Age" : norm,
-            "Gender" : one_hot,
+            "Gender" : convert_str_nominal,
             "Weight": norm,
             "Height": norm,
-            "Bodyfat:": norm,
+            "Bodyfat": norm,
             "Bodytemp": norm,
             "Sport-Last-Hour": convert_binary,
             "Time-Since-Meal": norm,
@@ -314,10 +321,10 @@ operations = dict({
 
 params = dict({
             "Age" : [0,100],
-            "Gender" : [3],
-            "Weight": [],
-            "Height": [],
-            "Bodyfat:": [0.05, 40.0],
+            "Gender" : [True],
+            "Weight": [40.0, 110.0],
+            "Height": [140.0, 210.0],
+            "Bodyfat": [0.05, 40.0],
             "Bodytemp": [],
             "Sport-Last-Hour": [],
             "Time-Since-Meal": [],

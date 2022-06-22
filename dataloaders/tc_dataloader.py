@@ -207,6 +207,10 @@ class TC_Dataloader(BaseDataset):
             self.df.pop("RGB_Frontal_View")
             self.img_list = paths
         
+        for col in self.columns:
+            print(self.df[col])
+            print(self.df[col].values.dtype)
+            
         print("Pre-processing done!\r\n")
     
     def train_transform(self, rgb):
@@ -328,7 +332,7 @@ class TC_Dataloader(BaseDataset):
                 label = np.array(self.df.iloc[limit, -1])
                 if index == limit:
                     limit += 1
-                    
+        #print(np.array(self.df.iloc[[index], :-1]).dtype)
         out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
         label = torch.from_numpy(label)
         
