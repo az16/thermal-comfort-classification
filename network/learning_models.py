@@ -74,6 +74,7 @@ class Discretizer(nn.Module):
         pad = torch.ones((B,5))
         if x.is_cuda:
             pad = pad.cuda()
+            self.b = self.b.cuda()
         pad.requires_grad=True
         t = torch.multiply(pad,x)
         # print(t)
