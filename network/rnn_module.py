@@ -111,7 +111,7 @@ class TC_RNN_Module(pl.LightningModule):
         # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
         preds, y = self.prepare_cfm_data(y_hat, y)
-        print(int(preds[0]))
+        #print(int(preds[0]))
         # # print(self.label_names[y[0]])
         self.train_preds.append(self.label_names[int(preds[0])])
         self.train_labels.append(self.label_names[int(y[0])])
@@ -140,11 +140,11 @@ class TC_RNN_Module(pl.LightningModule):
         
         return {"loss": loss}
         
-    # def on_validation_end(self):
-    #     if len(self.train_preds) > 0:
-    #         compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-    #     if len(self.val_preds) > 0:
-    #         compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
+    def on_validation_end(self):
+        if len(self.train_preds) > 0:
+            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
+        if len(self.val_preds) > 0:
+            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
         
     def test_step(self, batch, batch_idx):
         x, y = batch
