@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch
 import torchvision as tv
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from spacecutter.models import OrdinalLogisticModel
 #from network.computations import categoryFromOutput
 
 class MLP(nn.Module):
