@@ -1,6 +1,6 @@
 from sklearn import metrics
 import torch 
-# import torch.nn as nn
+import torch.nn as nn
 # import pytorch_lightning as pl
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -157,14 +157,30 @@ def mae(preds, targets):
     tmp = torch.abs(targets-preds)
     return torch.sum(tmp)*(1/B)
 
-METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
-METRICS['mse'] = METRICS['mean_squared_error']
-METRICS['msle'] = METRICS['mean_squared_log_error']
-METRICS['mae'] = METRICS['mean_absolute_error']
-METRICS['accuracy'] = Accuracy(num_classes=7)
-METRICS['precision'] = Precision(num_classes=7)
-METRICS['recall'] = Recall(num_classes=7)
-METRICS['f1-score'] = F1Score(num_classes=7)
+
+class Accuracy(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.current_correct = 0
+        self.current_total = 0
+    
+    def reset(self):
+        self.current_correct = 0
+        self.current_total = 0
+    
+    def forward(self, y_hat, y):
+        self.current_correct += torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
+        self.current_total += y_hat.shape[0]
+        return self.current_correct/self.current_total
+
+# METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
+# METRICS['mse'] = METRICS['mean_squared_error']
+# METRICS['msle'] = METRICS['mean_squared_log_error']
+# METRICS['mae'] = METRICS['mean_absolute_error']
+# METRICS['accuracy'] = Accuracy(num_classes=7)
+# METRICS['precision'] = Precision(num_classes=7)
+# METRICS['recall'] = Recall(num_classes=7)
+# METRICS['f1-score'] = F1Score(num_classes=7)
 
 if __name__ == "__main__":
     # preds = torch.Tensor([[1.1],

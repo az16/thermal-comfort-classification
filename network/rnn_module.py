@@ -1,5 +1,5 @@
 from multiprocessing import cpu_count
-from torchmetrics import Accuracy
+from metrics import Accuracy
 from metrics import rmse, mae, compute_confusion_matrix
 import numpy as np 
 import torch
@@ -37,9 +37,10 @@ class TC_RNN_Module(pl.LightningModule):
                                                 num_workers=cpu_count(), 
                                                 pin_memory=True)
         #self.pmv_results = PMV_Results()
-        self.classification_loss = True
+        self.classification_loss = False
         
-        self.criterion = torch.nn.CrossEntropyLoss()
+        #self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.MSELoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
@@ -100,22 +101,20 @@ class TC_RNN_Module(pl.LightningModule):
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()
+        else: y = y.float()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_train(preds, y)
-        accuracy = self.acc_train.compute()
+        accuracy = self.acc_train(y_hat, y)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
         # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
         # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[preds[0]])
-        self.train_labels.append(self.label_names[y[0]])
+        preds, y = self.prepare_cfm_data(y_hat, y)
+        print(int(preds[0]))
+        # # print(self.label_names[y[0]])
+        self.train_preds.append(self.label_names[int(preds[0])])
+        self.train_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
     
@@ -128,29 +127,24 @@ class TC_RNN_Module(pl.LightningModule):
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()
+        else: y = y.float()
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_val(preds, y)
-        accuracy = self.acc_val.compute()
+        accuracy = self.acc_val(y_hat, y)
         self.log("val_loss", loss, prog_bar=True, logger=True)
         self.log("val_acc", accuracy, prog_bar=True, logger=True)
-        # self.log("val_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        # self.log("val_mae", mae(y_hat, y), prog_bar=True, logger=True)
+       
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.val_preds.append(self.label_names[preds[0]])
-        self.val_labels.append(self.label_names[y[0]])
+        preds, y = self.prepare_cfm_data(y_hat, y)
+        self.val_preds.append(self.label_names[int(preds[0])])
+        self.val_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
         
-    def on_validation_end(self):
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
+    # def on_validation_end(self):
+    #     if len(self.train_preds) > 0:
+    #         compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
+    #     if len(self.val_preds) > 0:
+    #         compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
         
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -169,4 +163,14 @@ class TC_RNN_Module(pl.LightningModule):
         self.log("test_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
         return {"loss": loss}
+    
+    def prepare_cfm_data(self, preds, y):
+        preds = torch.sum(preds.cpu(), dim=1)
+        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
+        # print(preds)
+        # print(torch.round(preds))
+        preds = torch.round(preds)
+        y = torch.sum(y.cpu().long(), dim=1)
+        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
+        return preds, y
     

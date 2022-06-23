@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 import torchvision as tv
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from spacecutter.models import OrdinalLogisticModel
 #from network.computations import categoryFromOutput
 
 class MLP(nn.Module):
@@ -39,8 +40,7 @@ class RNN(nn.Module):
             self.lstm = self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
         self.fc2 = nn.Linear(hidden_dim//2, num_classes)
-        self.activation = nn.Softmax(dim=1)
-        
+        self.activation = nn.Sigmoid()
         
     def forward(self, x):
         self.lstm.flatten_parameters() #use multi GPU capabilities
@@ -51,10 +51,10 @@ class RNN(nn.Module):
         x = self.fc1(x)
         x = self.dp_layer(x)
         x = self.fc2(x)
-        #x = self.activation(x)
+        x = self.activation(x)
+        #print(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
-
 
 class RCNN(nn.Module):
     def __init__(self, num_in_features, num_classes=7, hidden=512, n_layers=2, dropout=0.2):
@@ -95,6 +95,9 @@ class RCNN(nn.Module):
         #x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
+
+        
+        
     
 class Skip(nn.Module):
     def __init__(self):
@@ -104,7 +107,7 @@ class Skip(nn.Module):
 
 class RandomForest():
     def __init__(self, n_estimators=500, max_depth=6, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
-        self.rf = RandomForestClassifier()
+        self.rf = RandomForestClassifier(random_state=0)
         if not cv:
             self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,
                                              random_state=0, max_samples=525)
@@ -152,29 +155,8 @@ class RandomForestRegressor():
         return self.rf.predict(x)
 
 if __name__ == "__main__":
-    # t1 = torch.Tensor([0.8, 0.1, 0.05, 0.])
-    # t2 = torch.randn((16,5,4))
-    # t = (t1,t2)
-    # # t = torch.Tensor([1.9, 1.9, 1.1, 1.0, 1.4, 1.1, 1.4])
-    # # print(t.shape)
-    # # print(t)
-    # m = RCNN(num_in_features=4)
-    # r = m(t)
-    # print(r.shape)
-    # #print(r)
-    # Example of target with class indices
-    loss = nn.CrossEntropyLoss()
-    # input = torch.randn(3, 5, requires_grad=True)
-    # target = torch.empty(3, dtype=torch.long).random_(5)
-    # print(input)
-    # print(target)
-    # output = loss(input, target)
-    # print(output)
-    # output.backward()
-    # # Example of target with class probabilities
-    input = torch.randn(3, 5, requires_grad=True)
-    target = torch.randn(3, 5).softmax(dim=1)
-    print(input)
-    print(target)
-    output = loss(input, target)
-    print(output)
+    test = torch.randn((4,7))
+    print(test)
+    test = torch.sigmoid(test)
+    print(test)
+    

@@ -367,6 +367,19 @@ def label2idx(label):
     except:
         return np.array(label)
 
+def order_representation(label):
+    #print(label)
+    if label == 6:
+        #print(np.ones(shape=(7)))
+        return np.ones(shape=(7))
+    else:
+        category_vector = np.ones(shape=(7))
+        category_vector[np.int8(label)+1:] = 0
+        #print(category_vector)
+        return category_vector
+        
+     
+
 def get_change_rate(df, look_ahead_window=1000):
     df = df.values
     shifted = np.concatenate((df[look_ahead_window:], np.ones(look_ahead_window)*df[-1]))
