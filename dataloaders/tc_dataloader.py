@@ -341,7 +341,7 @@ class TC_Dataloader(BaseDataset):
 
             if not self.use_col_as_label:
                 label = label2idx(label)
-                label = order_representation(label)
+                #label = order_representation(label)
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:

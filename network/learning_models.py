@@ -1,3 +1,4 @@
+from turtle import forward
 from sklearn import feature_extraction
 import torch.nn as nn
 import torch
@@ -38,8 +39,9 @@ class RNN(nn.Module):
         if n_layers > 1:
             self.lstm = self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
-        self.fc2 = nn.Linear(hidden_dim//2, num_classes)
+        self.fc2 = nn.Linear(hidden_dim//2, 1)
         self.activation = nn.Sigmoid()
+        self.discretizer = Discretizer(num_classes)
         
     def forward(self, x):
         self.lstm.flatten_parameters() #use multi GPU capabilities
@@ -51,9 +53,35 @@ class RNN(nn.Module):
         x = self.dp_layer(x)
         x = self.fc2(x)
         x = self.activation(x)
+        x = self.discretizer(x)
         #print(x)
-        #x *= 3 #scale to [-3,3]
+        
         return x #x.float()
+    
+
+class Discretizer(nn.Module):
+    def __init__(self, categories) -> None:
+        super().__init__()
+        self.n = categories
+        self.b = torch.arange(0.0,1.0, 1/(categories*2))[1:]
+        self.b = self.b[1::2]
+    
+    def forward(self, x):
+        B, _ = x.size()
+        #cut_points = torch.repeat_interleave(torch.unsqueeze(self.b,dim=0), B, dim=0)
+        #values = torch.ones((B,1))*x
+        #return torch.squeeze(torch.bucketize(values, self.b))
+        pad = torch.ones((B,5))
+        pad.requires_grad=True
+        t = torch.multiply(pad,x)
+        # print(t)
+        c = torch.cat((x,t), dim=1)
+        # print(c)
+        # print(self.b)
+        x = torch.sum((c[::]>self.b[::]), dim=1).float()
+        x.requires_grad=True
+        # print(x.requires_grad)
+        return x
 
 class RCNN(nn.Module):
     def __init__(self, num_in_features, num_classes=7, hidden=512, n_layers=2, dropout=0.2):
@@ -154,8 +182,32 @@ class RandomForestRegressor():
         return self.rf.predict(x)
 
 if __name__ == "__main__":
-    test = torch.randn((4,7))
-    print(test)
-    test = torch.sigmoid(test)
-    print(test)
+    d = Discretizer(7)
+    b = torch.arange(0.0,1.0, 1/14)[1:]
+    b = b[1::2]
+    c = torch.sigmoid(torch.randn((4,1)))
+    B, _ = c.size() 
+    t = torch.ones(B,5)*c
+    c = torch.cat((c,t), dim=1)
+    print(c)
+    tmp = torch.sum((c[::]>b[::]), dim=1)
+    print(tmp)
+
+    #print(c)
+    #print(torch.squeeze(d(c)))
+    # b = torch.arange(0.0,1.0, 1/14)[1:]
+    # #b = b[0::2]
+    # c = b[1::2].contiguous()
+    # print(c)
+    # #b = torch.repeat_interleave(torch.unsqueeze(b,dim=0), 1, dim=0)
+    # #print(b)
+    # v = torch.ones((1,7))*0.8571
+    # print(torch.bucketize(v, c))
+    # print(v)
+    # distances = torch.abs(torch.subtract(b,v))
+    # print(distances)
+    # min = torch.min(distances, dim=1)
+    # print(min)
+    # min = (distances == min).nonzero(as_tuple=True)[0]
+    # print(min)
     

@@ -169,7 +169,7 @@ class Accuracy(nn.Module):
         self.current_total = 0
     
     def forward(self, y_hat, y):
-        self.current_correct += torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
+        self.current_correct += torch.sum((y_hat == y)).item()
         self.current_total += y_hat.shape[0]
         return self.current_correct/self.current_total
 

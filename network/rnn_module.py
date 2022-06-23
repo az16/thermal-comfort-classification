@@ -128,6 +128,8 @@ class TC_RNN_Module(pl.LightningModule):
         if self.classification_loss:
             y = y.long()
         else: y = y.float()
+        # print(y_hat)
+        # print(y)
         loss = self.criterion(y_hat, y)
         accuracy = self.acc_val(y_hat, y)
         self.log("val_loss", loss, prog_bar=True, logger=True)
@@ -165,12 +167,7 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
-        preds = torch.sum(preds.cpu(), dim=1)
-        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
-        # print(preds)
-        # print(torch.round(preds))
-        preds = torch.round(preds)
-        y = torch.sum(y.cpu().long(), dim=1)
-        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
+        preds = preds.cpu()
+        y.cpu().long()
         return preds, y
     
