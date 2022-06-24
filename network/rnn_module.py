@@ -167,11 +167,11 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
-        preds = torch.sum(preds.cpu(), dim=1)
+        preds = torch.sum(torch.round(preds.cpu()), dim=1)
         preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
         # print(preds)
         # print(torch.round(preds))
-        preds = torch.round(preds)
+        #preds = torch.round(preds)
         y = torch.sum(y.cpu().long(), dim=1)
         y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
         return preds, y

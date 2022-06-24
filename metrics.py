@@ -191,9 +191,12 @@ class Accuracy(nn.Module):
         self.current_total = 0
     
     def forward(self, y_hat, y):
+        # ones = torch.sum(torch.all((torch.round(y_hat) == 1), dim=1))
+        # tmp = torch.zeros_like(y_hat)
         self.current_correct += torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
         self.current_total += y_hat.shape[0]
         return self.current_correct/self.current_total
+    
 
 # METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
 # METRICS['mse'] = METRICS['mean_squared_error']
