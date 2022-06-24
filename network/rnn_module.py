@@ -1,10 +1,10 @@
 from multiprocessing import cpu_count
-from metrics import Accuracy
+from metrics import Accuracy, MAELoss
 from metrics import rmse, mae, compute_confusion_matrix
 import numpy as np 
 import torch
 import pytorch_lightning as pl
-from network.learning_models import RNN
+from network.learning_models import RNN, Discretizer
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
@@ -40,7 +40,8 @@ class TC_RNN_Module(pl.LightningModule):
         self.classification_loss = False
         
         #self.criterion = torch.nn.CrossEntropyLoss()
-        self.criterion = torch.nn.MSELoss()
+        self.disc = Discretizer(7)
+        self.criterion = MAELoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
@@ -104,7 +105,7 @@ class TC_RNN_Module(pl.LightningModule):
         else: y = y.float()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_train(y_hat, y)
+        accuracy = self.acc_train(self.discretize(y_hat), y)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
         # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
@@ -167,7 +168,29 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
-        preds = preds.cpu()
+        preds = self.discretize(preds.cpu())
         y.cpu().long()
         return preds, y
+    
+    def discretize(self, x, categories=7):
+        B, _ = x.size()
+        #cut_points = torch.repeat_interleave(torch.unsqueeze(self.b,dim=0), B, dim=0)
+        #values = torch.ones((B,1))*x
+        #return torch.squeeze(torch.bucketize(values, self.b))
+        b = torch.arange(0.0,1.0, 1/(categories*2))[1:]
+        b = b[1::2]
+        pad = torch.ones((B,5))
+        if x.is_cuda:
+            pad = pad.cuda()
+            b = b.cuda()
+        pad.requires_grad=True
+        t = torch.multiply(pad,x)
+        # print(t)
+        c = torch.cat((x,t), dim=1)
+        # print(c)
+        # print(self.b)
+        x = torch.sum((c[::]>b[::]), dim=1).float()
+        x.requires_grad=True
+        # print(x.requires_grad)
+        return x
     

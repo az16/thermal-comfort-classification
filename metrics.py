@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import datetime
+import datetime 
+from network.learning_models import Discretizer
 
 
 class MetricLogger(object):
@@ -71,6 +72,27 @@ class MetricComputation(object):
     def avg(self, metric):
         if isinstance(metric, str): return self.metrics[self.names.index(metric)].compute()
         assert False, "metric must be str"
+
+class MAELoss(nn.Module):
+    def __init__(self, reduction="mean") -> None:
+        super().__init__()
+        
+        self.reduction = reduction 
+        self.disc = Discretizer(7)
+    
+    def _reduction(self, loss):
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:
+            raise ValueError(f'{self.reduction} is not a valid reduction')
+    
+    def forward(self, y_hat, y):
+        y_hat = self.disc(y_hat)
+        l = torch.abs(torch.subtract(y_hat, y))
+        return self._reduction(l)
+
 
 def compute_confusion_matrix(preds, labels, label_names, current_epoch, context, mode):
     #print(preds, labels)

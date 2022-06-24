@@ -41,7 +41,7 @@ class RNN(nn.Module):
         self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
         self.fc2 = nn.Linear(hidden_dim//2, 1)
         self.activation = nn.Sigmoid()
-        self.discretizer = Discretizer(num_classes)
+        #self.discretizer = Discretizer(num_classes)
         
     def forward(self, x):
         self.lstm.flatten_parameters() #use multi GPU capabilities
@@ -53,7 +53,7 @@ class RNN(nn.Module):
         x = self.dp_layer(x)
         x = self.fc2(x)
         x = self.activation(x)
-        x = self.discretizer(x)
+        #x = self.discretizer(x)
         #print(x)
         
         return x #x.float()
