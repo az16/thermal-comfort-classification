@@ -334,6 +334,8 @@ class TC_Dataloader(BaseDataset):
                     limit += 1
         #print(np.array(self.df.iloc[[index], :-1]).dtype)
         out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
+        label = label2idx(label)
+        label = order_representation(label)
         label = torch.from_numpy(label)
         
         if self.use_sequence:

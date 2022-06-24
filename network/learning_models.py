@@ -14,18 +14,26 @@ class MLP(nn.Module):
         Simple linear regression classifier without activation layer
         """
         
-        self.lin_1 = nn.Linear(input_size, 1)
+        print(input_size)
+        self.layers = nn.Sequential(
+            nn.Linear(input_size, input_size*2),
+            #nn.BatchNorm1d(num_features=10),
+            nn.ReLU(),
+            nn.Linear(input_size*2, input_size*2),
+            #nn.BatchNorm1d(num_features=10),
+            nn.ReLU(),
+            nn.Linear(input_size*2, num_categories),
+            nn.Sigmoid()
+        )
+        # self.input_layer = nn.Linear(input_size, input_size*2)
+        # self.hidden_1 = nn.Linear(input_size*2, input_size*2)
+        # self.hidden_2 = nn.Linear(input_size*2, num_categories)
+        # self.activation = nn.Sigmoid()
         
 
     def forward(self, x):
-        #b,s,f = x.size()
-        #x = x.view(b, f, s)
-        x = torch.squeeze(x)
-        # print(x.shape)
-        # print(x)
-        x = self.lin_1(x)
-        #x = x.view(b,1,f)
-        return torch.squeeze(x)
+        x = self.layers(x)
+        return torch.squeeze(x, dim=1)
 
 class RNN(nn.Module):
     def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
@@ -168,7 +176,7 @@ class RandomForest():
         return weights
 
 class RandomForestRegressor():
-    def __init__(self, n_estimators=None, max_depth=None, criterion='squared_error', bootstrap=True, cv=True, max_features="log2"):
+    def __init__(self, n_estimators=500, max_depth=6, criterion='squared_error', bootstrap=True, cv=True, max_features="log2"):
         self.rf = RandomForestClassifier()
         if not cv:
             self.rf = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, bootstrap=bootstrap)
