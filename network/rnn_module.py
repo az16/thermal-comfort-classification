@@ -40,8 +40,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.classification_loss = False
         
         #self.criterion = torch.nn.CrossEntropyLoss()
-        self.disc = Discretizer(7)
-        self.criterion = MAELoss()
+        self.criterion = torch.nn.MSELoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
@@ -105,7 +104,7 @@ class TC_RNN_Module(pl.LightningModule):
         else: y = y.float()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_train(self.discretize(y_hat), y)
+        accuracy = self.acc_train(y_hat, y)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
         # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
@@ -168,8 +167,13 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
-        preds = self.discretize(preds.cpu())
-        y.cpu().long()
+        preds = torch.sum(preds.cpu(), dim=1)
+        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
+        # print(preds)
+        # print(torch.round(preds))
+        preds = torch.round(preds)
+        y = torch.sum(y.cpu().long(), dim=1)
+        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
         return preds, y
     
     def discretize(self, x, categories=7):

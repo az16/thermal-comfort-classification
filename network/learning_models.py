@@ -39,7 +39,7 @@ class RNN(nn.Module):
         if n_layers > 1:
             self.lstm = self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
-        self.fc2 = nn.Linear(hidden_dim//2, 1)
+        self.fc2 = nn.Linear(hidden_dim//2, num_classes)
         self.activation = nn.Sigmoid()
         #self.discretizer = Discretizer(num_classes)
         
