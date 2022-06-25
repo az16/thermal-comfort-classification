@@ -111,7 +111,7 @@ class TC_RNN_Module(pl.LightningModule):
         # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
         preds, y = self.prepare_cfm_data(y_hat, y)
-        print(int(preds[0]))
+        #print(int(preds[0]))
         # # print(self.label_names[y[0]])
         self.train_preds.append(self.label_names[int(preds[0])])
         self.train_labels.append(self.label_names[int(y[0])])
