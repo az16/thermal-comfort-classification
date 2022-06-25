@@ -38,7 +38,6 @@ import numpy as np
 class TC_Dataloader(BaseDataset):
     """
     Loads .csv data and preprocesses respective splits
-
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
@@ -88,8 +87,6 @@ class TC_Dataloader(BaseDataset):
     def load_file_contents(self, split):
         """
         Loads .csv data as np.array and splits input signals/labels.
-
-
         Args:
             root (str): path of the root directory
             split (str): training or validation split string
@@ -239,10 +236,8 @@ class TC_Dataloader(BaseDataset):
         """
         Creates input,label pair with data found in each data frame at
         the given index.
-
         Args:
             index (int): the index to get the data from
-
         Returns:
             sequence or single input variables, single label
         """
@@ -334,9 +329,7 @@ class TC_Dataloader(BaseDataset):
                     limit += 1
         #print(np.array(self.df.iloc[[index], :-1]).dtype)
         out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
-        label = label2idx(label)
-        # label = order_representation(label)
-        # label = torch.from_numpy(label)
+        label = torch.from_numpy(label)
         
         if self.use_sequence:
             out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
@@ -360,7 +353,6 @@ class TC_Dataloader(BaseDataset):
         Returns the number of total data lines. Columns
         are not returned as they are the same for both, training
         and validation dataset.
-
         Returns:
             int: number of rows int the dataset
         """        
@@ -369,4 +361,3 @@ class TC_Dataloader(BaseDataset):
     
     
 
-    

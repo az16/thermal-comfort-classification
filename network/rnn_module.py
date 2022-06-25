@@ -1,10 +1,10 @@
 from multiprocessing import cpu_count
-from metrics import Accuracy, MAELoss
+from metrics import Accuracy
 from metrics import rmse, mae, compute_confusion_matrix
 import numpy as np 
 import torch
 import pytorch_lightning as pl
-from network.learning_models import RNN, Discretizer
+from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
@@ -21,8 +21,6 @@ class TC_RNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        categorical_vars = len([x for x in mask if x < 11])
-        time_vars = len([x for x in mask if x in [11,12,28,29,30,31,32]])
         self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
@@ -54,8 +52,8 @@ class TC_RNN_Module(pl.LightningModule):
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_classes=num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
-        else: self.model = RNN(num_features, num_classes=num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
+        if gpu_mode: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        else: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
 
     def convert_to_list(self, config_string):
         trimmed_brackets = config_string[1:len(config_string)-1]
@@ -113,7 +111,7 @@ class TC_RNN_Module(pl.LightningModule):
         # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
         preds, y = self.prepare_cfm_data(y_hat, y)
-        #print(int(preds[0]))
+        print(int(preds[0]))
         # # print(self.label_names[y[0]])
         self.train_preds.append(self.label_names[int(preds[0])])
         self.train_labels.append(self.label_names[int(y[0])])
@@ -130,8 +128,6 @@ class TC_RNN_Module(pl.LightningModule):
         if self.classification_loss:
             y = y.long()
         else: y = y.float()
-        # print(y_hat)
-        # print(y)
         loss = self.criterion(y_hat, y)
         accuracy = self.acc_val(y_hat, y)
         self.log("val_loss", loss, prog_bar=True, logger=True)
@@ -144,11 +140,11 @@ class TC_RNN_Module(pl.LightningModule):
         
         return {"loss": loss}
         
-    def on_validation_end(self):
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
+    # def on_validation_end(self):
+    #     if len(self.train_preds) > 0:
+    #         compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
+    #     if len(self.val_preds) > 0:
+    #         compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
         
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -169,34 +165,11 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
-        preds = torch.sum(torch.round(preds.cpu()), dim=1)
+        preds = torch.sum(preds.cpu(), dim=1)
         preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
         # print(preds)
         # print(torch.round(preds))
-        #preds = torch.round(preds)
+        preds = torch.round(preds)
         y = torch.sum(y.cpu().long(), dim=1)
         y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
         return preds, y
-    
-    def discretize(self, x, categories=7):
-        B, _ = x.size()
-        #cut_points = torch.repeat_interleave(torch.unsqueeze(self.b,dim=0), B, dim=0)
-        #values = torch.ones((B,1))*x
-        #return torch.squeeze(torch.bucketize(values, self.b))
-        b = torch.arange(0.0,1.0, 1/(categories*2))[1:]
-        b = b[1::2]
-        pad = torch.ones((B,5))
-        if x.is_cuda:
-            pad = pad.cuda()
-            b = b.cuda()
-        pad.requires_grad=True
-        t = torch.multiply(pad,x)
-        # print(t)
-        c = torch.cat((x,t), dim=1)
-        # print(c)
-        # print(self.b)
-        x = torch.sum((c[::]>b[::]), dim=1).float()
-        x.requires_grad=True
-        # print(x.requires_grad)
-        return x
-    

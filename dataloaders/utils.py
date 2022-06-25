@@ -389,6 +389,7 @@ def sk_order_representation(labels):
     r = np.ones((np_labels.shape[0], 7))
     for val in np_labels:
         r[i,val:] = 0 
+        #print(r[i])
         i += 1
     return r
 
