@@ -367,8 +367,11 @@ def label2idx(label):
     except:
         return np.array(label)
 
-def order_representation(label):
-    #print(label)
+def order_representation(label, sklearn=False):
+    if sklearn:
+        return sk_order_representation(label)
+    # print(label)
+    # print(label.shape)
     if label == 6:
         #print(np.ones(shape=(7)))
         return np.ones(shape=(7))
@@ -378,7 +381,16 @@ def order_representation(label):
         #print(category_vector)
         return category_vector
         
-     
+def sk_order_representation(labels):
+    np_labels = labels.values
+    #np_labels = labels
+    #print(labels)
+    i = 0
+    r = np.ones((np_labels.shape[0], 7))
+    for val in np_labels:
+        r[i,val:] = 0 
+        i += 1
+    return r
 
 def get_change_rate(df, look_ahead_window=1000):
     df = df.values
@@ -408,9 +420,5 @@ def weight_dict():
         
 
 if __name__ == "__main__":
-    f = ["clothing","ambient_temp","ambient_hum"]
-    
-    tmp = feature_permutations(f)
-    print(len(tmp))
-    for i in range(len(tmp)):
-         print(list(tmp[i]))
+    t = np.arange(1,8)
+    print(order_representation(t, sklearn=True))

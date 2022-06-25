@@ -38,43 +38,26 @@ class MLP(nn.Module):
         return torch.squeeze(x, dim=1)
 
 class RNN(nn.Module):
-    def __init__(self, time_features, categorical, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
+    def __init__(self, num_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
-        self.categorical = categorical
-        self.time_dependent = time_features
         self.n_layers = n_layers
-        self.mlp = nn.Sequential(
-            nn.Linear(categorical, categorical*2),
-            #nn.BatchNorm1d(num_features=10),
-            nn.ReLU(),
-            nn.Linear(categorical*2, categorical*2),
-            #nn.BatchNorm1d(num_features=10),
-            nn.ReLU(),
-            nn.Linear(categorical*2, 1)
-        )
-        self.lstm = nn.LSTM(time_features, hidden_dim, n_layers, batch_first=True)
+        self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True)
         self.dp_layer = nn.Dropout(dropout)
         if n_layers > 1:
-            self.lstm = self.lstm = nn.LSTM(time_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        self.fc1 = nn.Linear(hidden_dim+1, hidden_dim//2)
+            self.lstm = self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
         self.fc2 = nn.Linear(hidden_dim//2, num_classes)
         self.activation = nn.Sigmoid()
         #self.discretizer = Discretizer(num_classes)
         
     def forward(self, x):
         #print(x.shape)
-        c,t = x[:,-1,0:self.categorical], x[:,:,self.categorical:]
-        
         self.lstm.flatten_parameters() #use multi GPU capabilities
-        _, (h_t, _) = self.lstm(t)
-        t_end = h_t[-1]
-        c = self.mlp(c)
-        #print(t_end.shape, c.shape)
-        x = torch.cat((t_end,c), dim=1)
-        #print(x.shape)
+        _, (h_t, _) = self.lstm(x)
+        x = h_t[-1]
         x = self.fc1(x)
         x = self.dp_layer(x)
         x = self.fc2(x)
@@ -161,7 +144,7 @@ class Skip(nn.Module):
 
 class RandomForest():
     def __init__(self, n_estimators=500, max_depth=6, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
-        self.rf = RandomForestClassifier(random_state=0)
+        self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features,random_state=0, min_samples_leaf=3, min_samples_split=2, max_samples=475)
         if not cv:
             self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,
                                              random_state=0, max_samples=525)
