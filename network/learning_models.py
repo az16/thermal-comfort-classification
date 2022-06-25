@@ -1,4 +1,3 @@
-from turtle import forward
 from sklearn import feature_extraction
 import torch.nn as nn
 import torch
@@ -22,6 +21,9 @@ class MLP(nn.Module):
             nn.Linear(input_size*2, input_size*2),
             #nn.BatchNorm1d(num_features=10),
             nn.ReLU(),
+            nn.Linear(input_size*2, input_size*2),
+            #nn.BatchNorm1d(num_features=10),
+            nn.ReLU(),
             nn.Linear(input_size*2, num_categories),
             nn.Sigmoid()
         )
@@ -36,34 +38,48 @@ class MLP(nn.Module):
         return torch.squeeze(x, dim=1)
 
 class RNN(nn.Module):
-    def __init__(self, in_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
+    def __init__(self, time_features, categorical, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
+        self.categorical = categorical
+        self.time_dependent = time_features
         self.n_layers = n_layers
-        self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True)
+        self.mlp = nn.Sequential(
+            nn.Linear(categorical, categorical*2),
+            #nn.BatchNorm1d(num_features=10),
+            nn.ReLU(),
+            nn.Linear(categorical*2, categorical*2),
+            #nn.BatchNorm1d(num_features=10),
+            nn.ReLU(),
+            nn.Linear(categorical*2, 1)
+        )
+        self.lstm = nn.LSTM(time_features, hidden_dim, n_layers, batch_first=True)
         self.dp_layer = nn.Dropout(dropout)
         if n_layers > 1:
-            self.lstm = self.lstm = nn.LSTM(in_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
+            self.lstm = self.lstm = nn.LSTM(time_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.fc1 = nn.Linear(hidden_dim+1, hidden_dim//2)
         self.fc2 = nn.Linear(hidden_dim//2, num_classes)
         self.activation = nn.Sigmoid()
         #self.discretizer = Discretizer(num_classes)
         
     def forward(self, x):
+        #print(x.shape)
+        c,t = x[:,-1,0:self.categorical], x[:,:,self.categorical:]
+        
         self.lstm.flatten_parameters() #use multi GPU capabilities
-        _, (h_t, _) = self.lstm(x)
-        x = h_t[-1]
-        if self.n_layers == 1:
-            x = self.dp_layer(x)
+        _, (h_t, _) = self.lstm(t)
+        t_end = h_t[-1]
+        c = self.mlp(c)
+        #print(t_end.shape, c.shape)
+        x = torch.cat((t_end,c), dim=1)
+        #print(x.shape)
         x = self.fc1(x)
         x = self.dp_layer(x)
         x = self.fc2(x)
         x = self.activation(x)
-        #x = self.discretizer(x)
-        #print(x)
-        
+      
         return x #x.float()
     
 

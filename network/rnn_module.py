@@ -21,6 +21,8 @@ class TC_RNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
+        categorical_vars = len([x for x in mask if x < 11])
+        time_vars = len([x for x in mask if x in [11,12,28,29,30,31,32]])
         self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
@@ -52,8 +54,8 @@ class TC_RNN_Module(pl.LightningModule):
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
-        if gpu_mode: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
-        else: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
+        if gpu_mode: self.model = RNN(time_features=time_vars, categorical=categorical_vars, num_classes=num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
+        else: self.model = RNN(time_features=time_vars, categorical=categorical_vars, num_classes=num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
 
     def convert_to_list(self, config_string):
         trimmed_brackets = config_string[1:len(config_string)-1]
