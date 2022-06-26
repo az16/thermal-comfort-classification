@@ -145,7 +145,7 @@ class Skip(nn.Module):
 
 class RandomForest():
     def __init__(self, n_estimators=500, max_depth=6, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
-        self.rf = RandomForestClassifier(n_estimators=150, max_depth=14, max_samples=475, random_state=0, min_samples_leaf=2, min_samples_split=3)
+        self.rf = RandomForestClassifier(n_estimators=50, max_depth=6, max_samples=425, random_state=0, min_samples_leaf=2, min_samples_split=3)
         if not cv:
             self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,
                                              random_state=0, max_samples=525)

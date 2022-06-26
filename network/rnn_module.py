@@ -140,11 +140,11 @@ class TC_RNN_Module(pl.LightningModule):
         
         return {"loss": loss}
         
-    # def on_validation_end(self):
-    #     if len(self.train_preds) > 0:
-    #         compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-    #     if len(self.val_preds) > 0:
-    #         compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
+    def on_validation_end(self):
+        if len(self.train_preds) > 0:
+            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
+        if len(self.val_preds) > 0:
+            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
         
     def test_step(self, batch, batch_idx):
         x, y = batch
