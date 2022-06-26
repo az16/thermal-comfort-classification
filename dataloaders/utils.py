@@ -393,6 +393,28 @@ def sk_order_representation(labels):
         i += 1
     return r
 
+def remove_grouped_outliers(group, col, df):
+    grouped_df = df.groupby(group)[col]
+    means = grouped_df.mean().values
+    #print( grouped_df.min().values)
+    stds = grouped_df.std().values
+   
+    lower, upper = means-3*stds, means+3*stds
+    # print(lower)
+    # print(upper)
+    for i in range(7):
+        c_label = i-3        
+        #print(upper[i])
+        #print(c_label)(df[col] > upper[i]) & (df[col] < lower[i]) &
+        # print(c_label)
+        # current = df.loc[(df[group]==c_label)]
+        # lower_removed = current.loc[(current[col] >= lower[i])]
+        # print((lower_removed[col] > upper[i]).any())
+        df = df.drop(df[(((df[col] > upper[i]) | (df[col] < lower[i])) & (df[group]==c_label))].index)
+        #print(df.shape)
+        #df = df.loc[df[col] >= lower[i] and df["Label"]==c_label]
+    return df
+
 def get_change_rate(df, look_ahead_window=1000):
     df = df.values
     shifted = np.concatenate((df[look_ahead_window:], np.ones(look_ahead_window)*df[-1]))
