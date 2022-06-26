@@ -402,7 +402,7 @@ def remove_grouped_outliers(group, col, df):
     lower, upper = means-3*stds, means+3*stds
     # print(lower)
     # print(upper)
-    for i in range(7):
+    for i in range(lower.shape[0]):
         c_label = i-3        
         #print(upper[i])
         #print(c_label)(df[col] > upper[i]) & (df[col] < lower[i]) &
