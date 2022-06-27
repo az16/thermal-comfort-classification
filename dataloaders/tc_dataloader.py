@@ -155,19 +155,19 @@ class TC_Dataloader(BaseDataset):
         
                 print("Outlier removal..")
                 #data cleaning (outlier removal + removal of empty columns)
-                for key in self.columns:
-                    if key in optional:
-                        masks.append(no_answer_mask(self.df[key]))
-                    elif key in numeric_safe:
-                        masks.append(clean(self.df[key])) 
+                # for key in self.columns:
+                #     if key in optional:
+                #         masks.append(no_answer_mask(self.df[key]))
+                #     elif key in numeric_safe:
+                #         masks.append(clean(self.df[key])) 
                 
-                if len(masks) > 0:
-                    full_mask = make_mask(tuple(masks))
-                    self.df = self.df.loc[full_mask, :]
+                # if len(masks) > 0:
+                #     full_mask = make_mask(tuple(masks))
+                #     self.df = self.df.loc[full_mask, :]
                 
-            # for key in numeric_safe:
-            #     if key in self.columns:  
-            #         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
+                for key in numeric_safe:
+                    if key in self.columns:  
+                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
@@ -203,6 +203,7 @@ class TC_Dataloader(BaseDataset):
         
         if self.use_imgs:
             paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
+            print(paths)
             # print(paths[0])
             # print(os.path.exists(paths[0]))
             self.df.pop("RGB_Frontal_View")
