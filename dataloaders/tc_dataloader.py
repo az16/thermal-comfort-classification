@@ -155,19 +155,19 @@ class TC_Dataloader(BaseDataset):
         
                 print("Outlier removal..")
                 #data cleaning (outlier removal + removal of empty columns)
-                # for key in self.columns:
-                #     if key in optional:
-                #         masks.append(no_answer_mask(self.df[key]))
-                #     elif key in numeric_safe:
-                #         masks.append(clean(self.df[key])) 
+                for key in self.columns:
+                    if key in optional:
+                        masks.append(no_answer_mask(self.df[key]))
+                    elif key in numeric_safe:
+                        masks.append(clean(self.df[key])) 
                 
-                # if len(masks) > 0:
-                #     full_mask = make_mask(tuple(masks))
-                #     self.df = self.df.loc[full_mask, :]
+                if len(masks) > 0:
+                    full_mask = make_mask(tuple(masks))
+                    self.df = self.df.loc[full_mask, :]
                 
-            for key in numeric_safe:
-                if key in self.columns:  
-                    self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
+            # for key in numeric_safe:
+            #     if key in self.columns:  
+            #         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
