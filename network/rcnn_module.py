@@ -1,6 +1,5 @@
 from multiprocessing import cpu_count
-from torchmetrics import Accuracy
-from metrics import rmse, mae, compute_confusion_matrix
+from metrics import rmse, mae, compute_confusion_matrix, Accuracy
 import numpy as np
 import torch
 import pytorch_lightning as pl
@@ -13,7 +12,7 @@ from dataloaders.path import *
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RCNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, preprocess, augmentation, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, preprocess, augmentation, skip, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
@@ -21,12 +20,12 @@ class TC_RCNN_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask, downsample=skip),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask, downsample=skip),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
@@ -37,9 +36,9 @@ class TC_RCNN_Module(pl.LightningModule):
                                                 num_workers=cpu_count(), 
                                                 pin_memory=True)
         #self.pmv_results = PMV_Results()
-        self.classification_loss = True
+        self.classification_loss = False
         
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.MSELoss()
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
@@ -68,7 +67,7 @@ class TC_RCNN_Module(pl.LightningModule):
         # Training parameters
         optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
         scheduler = {
-                'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.99999, self.global_step)),
+                'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.9999999, self.global_step)),
                 'interval': 'step',
                 'frequency': 1,
                 'strict': True,
@@ -100,22 +99,20 @@ class TC_RCNN_Module(pl.LightningModule):
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()
+        else: y = y.float()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_train(preds, y)
-        accuracy = self.acc_train.compute()
+        accuracy = self.acc_train(y_hat, y)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
         # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
         # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[preds[0]])
-        self.train_labels.append(self.label_names[y[0]])
+        preds, y = self.prepare_cfm_data(y_hat, y)
+        #print(int(preds[0]))
+        # # print(self.label_names[y[0]])
+        self.train_preds.append(self.label_names[int(preds[0])])
+        self.train_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
     
@@ -128,21 +125,16 @@ class TC_RCNN_Module(pl.LightningModule):
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()
+        else: y = y.float()
         loss = self.criterion(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        self.acc_val(preds, y)
-        accuracy = self.acc_val.compute()
+        accuracy = self.acc_val(y_hat, y)
         self.log("val_loss", loss, prog_bar=True, logger=True)
         self.log("val_acc", accuracy, prog_bar=True, logger=True)
-        # self.log("val_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        # self.log("val_mae", mae(y_hat, y), prog_bar=True, logger=True)
+       
         
-        preds = preds.cpu()
-        y = y.cpu().long()
-        # print(self.label_names[preds[0]])
-        # print(self.label_names[y[0]])
-        self.val_preds.append(self.label_names[preds[0]])
-        self.val_labels.append(self.label_names[y[0]])
+        preds, y = self.prepare_cfm_data(y_hat, y)
+        self.val_preds.append(self.label_names[int(preds[0])])
+        self.val_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
         
@@ -170,3 +162,12 @@ class TC_RCNN_Module(pl.LightningModule):
         
         return {"loss": loss}
     
+    def prepare_cfm_data(self, preds, y):
+        preds = torch.sum(preds.cpu(), dim=1)
+        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
+        # print(preds)
+        # print(torch.round(preds))
+        preds = torch.round(preds)
+        y = torch.sum(y.cpu().long(), dim=1)
+        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
+        return preds, y

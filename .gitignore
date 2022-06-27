@@ -132,3 +132,4 @@ checkpoints/rcnn/*.ckpt
 tensorboard_logs/regression/version*/
 checkpoints/regression/*.ckpt
 dataloaders/path.py
+sklearn_logs

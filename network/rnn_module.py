@@ -26,7 +26,7 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 

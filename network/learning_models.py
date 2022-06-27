@@ -112,7 +112,7 @@ class RCNN(nn.Module):
         self.fc1 = nn.Linear(hidden, hidden//2)
         self.fc2 = nn.Linear(hidden//2, num_classes)
         
-        #self.activation = nn.Softmax(dim=1) #Softmax activation with 7 classes 
+        self.activation = nn.Sigmoid() #Softmax activation with 7 classes 
         
     def forward(self, x):
         rgb, numeric = x
@@ -130,7 +130,7 @@ class RCNN(nn.Module):
         x = self.fc1(x)
         x = self.dp_layer(x)
         x = self.fc2(x)
-        #x = self.activation(x)
+        x = self.activation(x)
         #x *= 3 #scale to [-3,3]
         return x #x.float()
 
@@ -144,11 +144,10 @@ class Skip(nn.Module):
         return x    
 
 class RandomForest():
-    def __init__(self, n_estimators=500, max_depth=6, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
-        self.rf = RandomForestClassifier(n_estimators=50, max_depth=6, max_samples=425, random_state=0, min_samples_leaf=2, min_samples_split=3)
+    def __init__(self, n_estimators=400, max_depth=8, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
+        self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,random_state=2,max_samples=200)
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,
-                                             random_state=0, max_samples=525)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,random_state=2,max_samples=200)
         
     
     def fit(self, train_inputs, train_labels):

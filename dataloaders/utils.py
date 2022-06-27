@@ -1,4 +1,5 @@
 
+import pickle
 from PIL import Image
 from pythermalcomfort.models import pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic, met_typical_tasks
@@ -9,6 +10,7 @@ import pandas as pd
 import torch
 import numpy as np
 from tqdm import tqdm
+import os 
 
 
 types = dict({
@@ -102,7 +104,8 @@ header = ["Timestamp",
           "Ambient_Humidity",
           "Label"]
 
-numeric_safe = ["Ambient_Temperature", "Radiation-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Humidity"]
+numeric_safe = [ "Radiation-Temp","Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
+high_outliers = ["Heart_Rate","GSR"]
 numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bodyfat"]
 categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
@@ -156,10 +159,11 @@ def standardize(sample):
     return (sample-np.mean(sample)/np.std(sample))
 
 def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
-    q25, q75 = np.percentile(sample,[25, 75])
-    iqr = q75-q25 
-    cutoff = iqr * cutoff_multiplier
-    lower, upper = q25-cutoff, q75+cutoff
+    # q25, q75 = np.percentile(sample,[25, 75])
+    # iqr = q75-q25 
+    # cutoff = iqr * cutoff_multiplier
+    #lower, upper = q25-cutoff, q75+cutoff
+    lower, upper = np.mean(sample)-3*np.std(sample),np.mean(sample)+3*np.std(sample)
     mask_u = (sample <= upper)
     mask_l = (sample >= lower) 
     #mask_z = (sample > 0) 
@@ -394,25 +398,31 @@ def sk_order_representation(labels):
     return r
 
 def remove_grouped_outliers(group, col, df):
+    # means = pickle.load(open("./sklearn_logs/pickles/{0}_means.p".format(col), "rb"))
+    # stds = pickle.load(open("./sklearn_logs/pickles/{0}_std.p".format(col),"rb"))
+    #print(os.listdir("./sklearn_logs/"))
     grouped_df = df.groupby(group)[col]
+    labels = [label for label,g_p in grouped_df]
     means = grouped_df.mean().values
+    #print(df[col].mean(), df[col].std())
     #print( grouped_df.min().values)
     stds = grouped_df.std().values
-   
+    # print(means)
+    # print(stds)
     lower, upper = means-3*stds, means+3*stds
     # print(lower)
     # print(upper)
-    for i in range(lower.shape[0]):
-        c_label = i-3        
-        #print(upper[i])
-        #print(c_label)(df[col] > upper[i]) & (df[col] < lower[i]) &
-        # print(c_label)
-        # current = df.loc[(df[group]==c_label)]
-        # lower_removed = current.loc[(current[col] >= lower[i])]
-        # print((lower_removed[col] > upper[i]).any())
-        df = df.drop(df[(((df[col] > upper[i]) | (df[col] < lower[i])) & (df[group]==c_label))].index)
-        #print(df.shape)
+    #print(labels)
+    bound_index = 0
+    #print(lower, upper)
+    for i in labels:
+        c_label = i       
+        #print(c_label)
+        #print(df[(((df[col] > upper[bound_index]) | (df[col] < lower[bound_index])) & (df[group]==c_label))])
+        df = df.drop(df[(((df[col] > upper[bound_index]) | (df[col] < lower[bound_index])) & (df[group]==c_label))].index)
+        bound_index += 1
         #df = df.loc[df[col] >= lower[i] and df["Label"]==c_label]
+    print(df.shape)
     return df
 
 def get_change_rate(df, look_ahead_window=1000):

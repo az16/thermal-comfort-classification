@@ -165,9 +165,9 @@ class TC_Dataloader(BaseDataset):
                 #     full_mask = make_mask(tuple(masks))
                 #     self.df = self.df.loc[full_mask, :]
                 
-                for key in numeric_safe:
-                    if key in self.columns:
-                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
+            for key in numeric_safe:
+                if key in self.columns:  
+                    self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index

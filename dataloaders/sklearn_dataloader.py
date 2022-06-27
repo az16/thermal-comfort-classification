@@ -45,15 +45,19 @@ class TC_Dataloader():
     """
     Loads .csv data and preprocesses respective splits
     """
-    def __init__(self, cv=False, split_size=0.8, by_file = False, full=False, cols=["Radiation-Temp",
-                                                                                    "Ambient_Temperature",	
-                                                                                    "Ambient_Humidity"]):
+    def __init__(self, cv=False, split_size=0.8, by_file = False, by_line=False, full=False, cols=["Age","Gender","Weight","Height","Bodytemp","Bodyfat","Sport-Last-Hour","Time-Since-Meal","Tiredness","Clothing-Level","Radiation-Temp",
+                                                                                                        "Ambient_Temperature",	
+                                                                                                        "Wrist_Skin_Temperature",
+                                                                                                        "Heart_Rate",
+                                                                                                        "GSR",
+                                                                                                        "Ambient_Humidity",]):
         self.columns = cols
         self.columns.append("Label")
         self.independent = cols[:-1]
         self.dependent = "Label"
         self.full_set = full
         self.by_file = by_file
+        self.by_line = by_line
         self.split_size = split_size
         self.cross_val = cv
         assert not cols is None, "Specify which columns to use as inputs for training."
@@ -64,23 +68,29 @@ class TC_Dataloader():
             self.cross_validation()
         elif self.by_file:
             self.load_and_split()
-        else:
+        elif self.by_line:
             self.load_and_split_full()
     
     def narrow_labels(self, df):
         #df = df[~df.Label==0]
-        df.loc[(df["Label"] == -3), "Label"] = -1
-        df.loc[(df["Label"] == -2), "Label"] = -1
-        #df.loc[(df["Label"] == -1), "Label"] = 0
-        df.loc[(df["Label"] == 0), "Label"] = 0
-        #df.loc[(df["Label"] == 1), "Label"] = 0
+        #print(df["Label"])
+        x = df["Label"] == 0
+        x = ~x
+        df = df[x]
+        # x = df["Label"] == 1
+        # x = ~x
+        # df = df[x]
+        df.loc[(df["Label"] == -3), "Label"] = 0
+        df.loc[(df["Label"] == -2), "Label"] = 0
+        df.loc[(df["Label"] == -1), "Label"] = 0
+        #df.loc[(df["Label"] == 0), "Label"] = 0
+        #df.loc[(df["Label"] == 1), "Label"] = 1
         df.loc[(df["Label"] == 2), "Label"] = 1
         df.loc[(df["Label"] == 3), "Label"] = 1
         #print(df)
+        #ck = df.groupby("Label")
         return df
         
-        
-
     def cross_validation(self):
         """
         Loads .csv data as np.array and splits input signals/labels.
@@ -121,14 +131,28 @@ class TC_Dataloader():
             
             train_df.astype(data_type_dict)
             val_df.astype(data_type_dict)
-            
-            train_df = train_df[train_df.index % 41 == 0] 
+            for key in self.columns:
+                if key in numeric_safe:
+                    print("Cleaning {0}, current shape {1}".format(key, train_df.shape))
+                    pre = train_df.shape[0]
+                    train_df = remove_grouped_outliers(group='Label', col=key, df=train_df)
+                    post = pre-train_df.shape[0]
+                    print("Shape after cleaning {0}. Removed {1}.".format(train_df.shape, post))
+            train_df = train_df[train_df.index % 100 == 0] 
             #val_df = val_df[val_df.index % 24 == 0] 
             
             
             if "Gender" in self.columns:
                 train_df = convert_str_nominal(train_df)
                 val_df = convert_str_nominal(val_df)
+            if "Bodyfat" in self.columns:
+                no_answer_train = train_df["Bodyfat"] == "No Answer"
+                no_answer_train = ~no_answer_train
+                train_df = train_df[no_answer_train]
+                no_answer_train = val_df["Bodyfat"] == "No Answer"
+                no_answer_train = ~no_answer_train
+                val_df = val_df[no_answer_train]
+
                 
             self.train_splits_x.append(train_df[self.independent])
             self.train_splits_y.append(train_df[self.dependent])
@@ -165,23 +189,38 @@ class TC_Dataloader():
             data_type_dict.update({key: types_sk[key]})
         
         self.train_df.astype(data_type_dict)
-        #self.train_df = self.narrow_labels(self.train_df)
-        #self.test_df.astype(data_type_dict)
-        self.train_df = self.train_df[self.train_df.index % 41 == 0] 
-        #shuffle
-        #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
-        # self.test_df = pd.get_dummies(self.test_df)
         
-        # for key in numeric_safe:
-        #     if key in self.columns:
-        #         self.train_df, new_col = get_change_rate(self.train_df, key)
-        #         self.independent.append(new_col)
         
-        #self.preprocess()
+        for key in self.columns:
+            if key in numeric_safe:
+                print("Cleaning {0}, current shape {1}".format(key, self.train_df.shape))
+                pre = self.train_df.shape[0]
+                self.train_df = remove_grouped_outliers(group='Label', col=key, df=self.train_df)
+                post = pre-self.train_df.shape[0]
+                print("Shape after cleaning {0}. Removed {1}.".format(self.train_df.shape, post))
+    
+        # masks = []
+        # for key in self.columns:
+        #     if key in high_outliers:
+        #         masks.append(clean(self.train_df[key])) 
+        
+        # if len(masks) > 0:
+        #     full_mask = make_mask(tuple(masks))
+        #     self.train_df = self.train_df.loc[full_mask, :]
+        
+        #print(self.train_df.shape)
+        self.train_df = self.narrow_labels(self.train_df)
+       
+        self.train_df = self.train_df[self.train_df.index % 100== 0] 
+        
+        self.preprocess()
         
         #print(self.train_df)
         self.all_X = self.train_df[self.independent]
         self.all_Y = self.train_df[self.dependent]
+        # self.all_Y += 4 
+        # self.all_Y = order_representation(self.all_Y, sklearn=True)
+        #print(self.all_Y)
         
     def load_and_split(self):
         """
@@ -246,15 +285,33 @@ class TC_Dataloader():
         self.val_df.astype(data_type_dict)
         self.test_df.astype(data_type_dict)
         
+        # masks_t = []
+        # masks_v = []
+        # for key in self.columns:
+        #     if key in numeric_safe:
+        #         masks_t.append(clean(self.train_df[key])) 
+        #         masks_v.append(clean(self.val_df[key])) 
+        
+        # if len(masks_t) > 0:
+        #     full_mask = make_mask(tuple(masks_t))
+        #     self.train_df = self.train_df.loc[full_mask, :]
+        #     full_mask = make_mask(tuple(masks_v))
+        #     self.val_df = self.val_df.loc[full_mask, :]
+        
+        # for key in tqdm(numeric_safe, desc="Removing outliers"):
+        #     if key in self.columns:
+        #         self.train_df = remove_grouped_outliers(group='Label', col=key, df=self.train_df)
+        #         self.val_df = remove_grouped_outliers(group='Label', col=key, df=self.val_df)
+        
         # self.train_df["Ambient_Temperature_Delta"] = get_change_rate(self.train_df["Ambient_Temperature"])
         # self.val_df["Ambient_Temperature_Delta"] = get_change_rate(self.val_df["Ambient_Temperature"])
         # self.test_df["Ambient_Temperature_Delta"] = get_change_rate(self.test_df["Ambient_Temperature"])
         # self.independent.append("Ambient_Temperature_Delta")
         #print(self.train_df)
         #shuffle
-        self.train_df = self.train_df[self.train_df.index % 41 == 0]
-        self.train_df = self.narrow_labels(self.train_df) 
-        self.val_df = self.narrow_labels(self.val_df) 
+        self.train_df = self.train_df[self.train_df.index % 100 == 0]
+        # self.train_df = self.narrow_labels(self.train_df) 
+        # self.val_df = self.narrow_labels(self.val_df) 
         # self.val_df = self.val_df[self.val_df.index % 41 == 0] 
         # self.test_df = self.test_df[self.test_df.index % 41 == 0]
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
@@ -269,7 +326,11 @@ class TC_Dataloader():
         self.val_X = self.val_df[self.independent]
         self.test_X = self.test_df[self.independent]
         self.train_Y = self.train_df[self.dependent]
+        #self.train_Y += 4 
+        #self.train_Y = order_representation(self.train_Y, sklearn=True)
         self.val_Y = self.val_df[self.dependent]
+        #self.val_Y += 4 
+        #self.val_Y = order_representation(self.val_Y, sklearn=True)
         self.test_Y = self.test_df[self.dependent]
         
         print("Done.\r\n")
@@ -289,7 +350,6 @@ class TC_Dataloader():
         #load .csv contents as list
         print("Loading contents..")
         self.full_df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(train_file_names)])
-        self.len = len(self.full_df)
         print("Creating data frames..")
         
         data_type_dict = dict({})
@@ -299,10 +359,25 @@ class TC_Dataloader():
             data_type_dict.update({key: types_sk[key]})
         
         self.full_df.astype(data_type_dict)
+        #data cleaning (outlier removal + removal of empty columns)
+        masks = []
+        for key in self.columns:
+            if key in optional:
+                masks.append(no_answer_mask(self.full_df[key]))
+            elif key in numeric_safe:
+                masks.append(clean(self.full_df[key])) 
         
-        self.full_df["Ambient_Temperature_Delta"] = get_change_rate(self.full_df["Ambient_Temperature"])
+        if len(masks) > 0:
+            full_mask = make_mask(tuple(masks))
+            self.full_df = self.full_df.loc[full_mask, :]
+                
+               
+        self.full_df = remove_grouped_outliers(group='Label', col="Ambient_Temperature", df=self.full_df)
+        
+        #self.full_df["Ambient_Temperature_Delta"] = get_change_rate(self.full_df["Ambient_Temperature"])#
+        self.len = len(self.full_df)
         limit = int(self.len * self.split_size)
-        self.full_df = self.full_df.sample(frac=1).reset_index(drop=True)
+        #self.full_df = self.full_df.sample(frac=1).reset_index(drop=True)
         self.train_df = self.full_df[0:limit]
         self.test_df = self.full_df[limit:]
         # print(self.train_df)
@@ -334,10 +409,12 @@ class TC_Dataloader():
             no_answer_test = ~no_answer_test
             self.test_df = self.test_df[no_answer_test]
             self.test_df = convert_str_nominal(self.test_df)
-            no_answer_val = self.val_df["Bodyfat"] == "No Answer"
-            no_answer_val = ~no_answer_val
-            self.val_df = self.val_df[no_answer_val]
-            self.val_df = convert_str_nominal(self.val_df)
+            if not self.by_line:
+                no_answer_val = self.val_df["Bodyfat"] == "No Answer"
+                no_answer_val = ~no_answer_val
+                self.val_df = self.val_df[no_answer_val]
+                self.val_df = convert_str_nominal(self.val_df)
+        
         # print(np.array(self.train_df["Tiredness"]).dtype)
         # # self.train_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
         # # self.test_df["Tiredness"] = one_hot(np.array(self.train_df["Tiredness"]), classes=10)
@@ -353,8 +430,10 @@ class TC_Dataloader():
             return self.train_X, self.train_Y, self.val_X, self.val_Y, self.test_X, self.test_Y 
         elif self.by_file and not mask is None:
             return self.train_X[mask], self.train_Y, self.val_X[mask], self.val_Y, self.test_X[mask], self.test_Y
-        else: 
-            return self.train_X, self.train_Y, self.val_X, self.val_Y 
+        elif self.by_line and not mask is None:
+            return self.train_X[mask], self.train_Y, self.test_X[mask], self.test_Y
+        elif self.by_line and mask is None: 
+            return self.train_X, self.train_Y, self.test_X, self.test_Y 
     
     
     
