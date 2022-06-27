@@ -125,11 +125,9 @@ dmypy.json
 *.csv
 
 #result folder
-tensorboard_logs/rnn/
+tensorboard_logs/
 checkpoints/rnn/*.ckpt
-tensorboard_logs/rcnn/version*/
 checkpoints/rcnn/*.ckpt
-tensorboard_logs/regression/version*/
 checkpoints/regression/*.ckpt
 dataloaders/path.py
 sklearn_logs
