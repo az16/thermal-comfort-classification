@@ -202,8 +202,10 @@ class TC_Dataloader(BaseDataset):
                 self.df[key] = func(*args)
         
         if self.use_imgs:
+            if self.split == 'validation': self.df["RGB_Frontal_View"].replace({'_6_': '_5_'}, regex=True)
             paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
-            print(paths)
+            #print(paths)
+                
             # print(paths[0])
             # print(os.path.exists(paths[0]))
             self.df.pop("RGB_Frontal_View")
