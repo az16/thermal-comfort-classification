@@ -113,7 +113,10 @@ class TC_Dataloader(BaseDataset):
 
         #load .csv contents as list
         print("Loading contents..")
-        self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
+        if self.use_imgs:
+            frames = [pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)]
+            self.df = pd.concat([x.drop(x.tail(1000).index, inplace = True) for x in frames])
+        else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
         if not self.downsample is None:
             self.df = self.df[self.df.index % self.downsample == 0] 
         if self.use_col_as_label:
@@ -202,7 +205,8 @@ class TC_Dataloader(BaseDataset):
                 self.df[key] = func(*args)
         
         if self.use_imgs:
-            if self.split == 'validation': self.df["RGB_Frontal_View"]=self.df["RGB_Frontal_View"].replace({'_6_': '_5_'}, regex=True)
+            if self.split == 'validation': 
+                self.df["RGB_Frontal_View"]=self.df["RGB_Frontal_View"].replace({'_6_': '_5_'}, regex=True)
             paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
             #print(paths)
                 
