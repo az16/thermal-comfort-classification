@@ -1,8 +1,12 @@
-from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score, cross_validate
+from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.feature_selection import SelectFromModel, SequentialFeatureSelector
+from sklearn.model_selection import GridSearchCV, cross_val_predict, train_test_split, cross_val_score, cross_validate
 from dataloaders.path import Path
 from sklearn.pipeline import make_pipeline
 from argparse import ArgumentParser
-from network.learning_models import RandomForest
+from network.learning_models import RandomForest, RandomForestRegressor
 from dataloaders.sklearn_dataloader import TC_Dataloader
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,6 +17,7 @@ from metrics import top_k_accuracy_score, visualize_feature_importance, accuracy
 from random import randint
 from dataloaders.utils import feature_permutations, weight_dict
 from sklearn.inspection import permutation_importance
+from tqdm import tqdm
 
 
 def clf_tree(x,y,label_names, name):
@@ -78,17 +83,19 @@ def cross_validate_local(x_splits_train, y_splits_train, x_splits_val, y_splits_
     visualize_feature_importance(np.mean(np.array(importance_imp), axis=0), feature_names, i="impurity_based")
     visualize_feature_importance(np.mean(np.array(importance_perm), axis=0), feature_names, i="permutation_based")
     
-def feature_selection(in_features):
+def feature_selection(in_features, test=None):
     performances = []
     feature_log = []
-    permutations = [list(x) for x in feature_permutations(in_features, max_size=len(in_features))]
-    model = RandomForest(n_estimators=75, max_depth=12, cv=False)
+    permutations = [list(x) for x in tqdm(feature_permutations(in_features, max_size=len(in_features)))]
+    if not test is None:
+        permutations = test
+    model = RandomForest(cv=True)
     clf = model.rf
     dataset = TC_Dataloader(full=True)
     for p in permutations:
         print(p)
         x, y = dataset.splits(mask=p)
-        cv = cross_validate(clf, x, y, return_train_score=True, verbose=3, cv=10)
+        cv = cross_validate(clf, x, y, return_train_score=True, verbose=3, cv=5)
         feature_log.append(p)
         performances.append(np.mean(np.array(cv["test_score"])))
         
@@ -101,10 +108,22 @@ def feature_selection(in_features):
     max_index = performances.index(max(performances))
     print("Best feature combination: {0}".format(feature_log[max_index]))
 
+def sk_feature_selection():
+    dataset = TC_Dataloader(full=True)
+    x, y = dataset.splits()
+    model = RandomForest(cv=False)
+    model.fit(x,y)
+    print(x)
+    model = SelectFromModel(model.rf, prefit=True)
+    #print(model.get_support())
+    x_new = model.transform(x)
+    print(x_new.shape)
+    print(x_new)    
+
 def grid_search(param_grid):
     dataset = TC_Dataloader(full=True)
-    x,y = dataset.splits(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'])
-    model = RandomForest(n_estimators=75, max_depth=12, cv=True)
+    x,y = dataset.splits(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp', 'Sport-Last-Hour'])
+    model = RandomForest(cv=True)
     clf = model.rf
     gs = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10, verbose=5)
     gs.fit(x,y)
@@ -128,7 +147,7 @@ def downsampling_selection(param_grid, limit=30):
         y = tmp["Label"]
         model = RandomForest(cv=True)
         clf = model.rf
-        gs = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10, verbose=5)
+        gs = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5, verbose=5)
         gs.fit(x,y)
         #print("Best parameters: {0}".format(gs.best_params_))
         print("score: {0}".format(gs.best_score_))
@@ -140,23 +159,31 @@ def downsampling_selection(param_grid, limit=30):
     print("Best performance: {0}".format(max))
     print("Best sampling rate: {0}".format(best_sampling_rate))
     
-def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp']):
-    model = RandomForest(cv=False)
-    dataset = TC_Dataloader(by_file=True) 
-    X, Y, val_X, val_Y, test_X, test_Y = dataset.splits(mask=mask)
-    model.fit(X, Y)
+def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp', 'Sport-Last-Hour']):
+    model = RandomForest(cv=False)#RandomForest(cv=False)
+    dataset = TC_Dataloader(full=True) 
+    X, Y = dataset.splits(mask=mask)
+    #print(X.shape)
+    print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
+    #model.fit(X,Y)
     #print(val_Y)
     #roc = roc_auc_score(val_Y, model.rf.predict_proba(val_X), multi_class='ovr')
     #print("ROC score: {0}".format(roc))
-    val_preds = model.predict(val_X)
-    clf_tree(val_preds, val_Y, [-1,0,1], "test classifier")
-    print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, val_Y)))
-    print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
-    print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
+    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)#model.predict(val_X)
+    #print(len(val_preds))
+    #print(val_preds)
+    clf_tree(val_preds, Y, [0,1], "Test_2_Point")
+    print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, Y)))
+    # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
+    # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
+    # feature_importance_imp = model.feature_importances()
+    # feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
+    # visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
+    # visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
     # RocCurveDisplay.from_estimator(model.rf, val_X, val_Y)
     # plt.show()
-    print(classification_report(val_Y, val_preds))
-    print("MAE for validation: {0}".format(mean_absolute_error(val_preds, val_Y)))
+    #print(classification_report(val_Y, val_preds))
+    #print("MAE for validation: {0}".format(mean_absolute_error(val_preds, val_Y)))
 
 def sk_cross_validate():
     model = RandomForest(cv=False)
@@ -177,27 +204,26 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    in_features = [ "Gender","Weight","Bodytemp",
-                    "Bodyfat",
-                    "GSR",
-                    "Radiation-Temp",	
+    in_features = [ "Gender","Weight","Height",
                     "Wrist_Skin_Temperature",
+                    "Radiation-Temp",
                     "Sport-Last-Hour",
                     "Ambient_Humidity",
                     "Ambient_Temperature"]
     
     params_grid = {
-                'n_estimators': [500],
-                'max_depth': [6],
-                'min_samples_split':[2],
-                'min_samples_leaf':[3],
+                'n_estimators': [50, 100, 200,300,400],
+                'max_depth': [8,16,24],
+                'min_samples_split':[3],
+                'min_samples_leaf':[2],
                 'max_leaf_nodes': [None],
-                'max_samples':[425,525,625],
-                'random_state': [0],
-                'max_features': ['auto'],
+                'max_samples':[100,200,300,400,500],
+                'random_state': [2]
+                #'max_features': ['auto']}
                 #'class_weight': [None, 'balanced'],
-                'criterion': ['gini'],
-                'bootstrap':[True]}
+                #'criterion': ['gini', 'entropy'],
+                #'bootstrap':[True]
+    }
     
     label_mapping = {-3:"Cold",
                      -2:"Cool",
@@ -207,15 +233,17 @@ if __name__ == "__main__":
                      2:"Warm",
                      3:"Hot"}
     
-    # dataset = TC_Dataloader(cv=True) #cols=["Ambient_Humidity", "Ambient_Temperature", "Gender", "Radiation-Temp"])
-    # x_t, y_t, x_v, y_v = dataset.splits()
+    #dataset = TC_Dataloader(cv=True) #cols=["Ambient_Humidity", "Ambient_Temperature", "Gender", "Radiation-Temp"])
+    #x_t, y_t, x_v, y_v = dataset.splits(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp', 'Sport-Last-Hour'])
     #feature_names = dataset.independent
     label_names = ["Cold", "Cool", "Slightly Cool", "Comfortable", "Slightly Warm", "Warm", "Hot"]
     labels = [-3,-2,-1,0,1,2,3]
-    #feature_selection(in_features=in_features)
+    #feature_selection(in_features=in_features)#, test=[["Ambient_Temperature","Ambient_Humidity","Radiation-Temp"]])
+    #sk_feature_selection()
     #grid_search(params_grid)
-    #downsampling_selection(params_grid)
     fit_random_forest()
+    #downsampling_selection(params_grid)
+    #fit_random_forest()
     #cross_validate_local(x_t, y_t, x_v, y_v, feature_names=dataset.independent)
     #sk_cross_validate()
     
