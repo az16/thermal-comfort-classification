@@ -149,20 +149,21 @@ class TC_Dataloader(BaseDataset):
         
                 print("Outlier removal..")
                 
-                for key in numeric_safe:
-                    if key in self.columns:  
-                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
                 #data cleaning (outlier removal + removal of empty columns)
                 
                 for key in self.columns:
                     if key in optional:
                         masks.append(no_answer_mask(self.df[key]))
-                    elif key in numeric_safe:
+                    elif key in high_outliers:
                         masks.append(clean(self.df[key])) 
                 
                 if len(masks) > 0:
                     full_mask = make_mask(tuple(masks))
                     self.df = self.df.loc[full_mask, :]
+                    
+                for key in grouped_removal:
+                    if key in self.columns:  
+                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
 
 
             #print("len dataframe after masking: {0}".format(self.__len__()))

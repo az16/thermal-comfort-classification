@@ -106,6 +106,7 @@ header = ["Timestamp",
 
 numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
 high_outliers = ["Heart_Rate","GSR"]
+grouped_removal = ["Ambient_Temperature","Radiation-Temp",]
 numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bodyfat"]
 categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
