@@ -1,6 +1,8 @@
 #from dataloaders.dataset import *
-from dataloaders.path import Path
-from dataloaders.utils import *
+# from dataloaders.path import Path
+#from dataloaders.utils import *
+from path import Path
+from utils import *
 import pandas as pd 
 
 import numpy as np
@@ -12,7 +14,7 @@ class PMV_Results():
     """
     def __init__(self): 
         self.columns = ["Radiation-Temp", "PCE-Ambient-Temp", "Ambient_Humidity", "Clothing-Level", "Label"]
-    
+        self.cut_points = np.array([-2.5,-1.5,-0.5,0.5,1.5,2.5])
         self.load_file_contents()
     
     def load_file_contents(self):
@@ -41,20 +43,30 @@ class PMV_Results():
         self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in file_names])
         #print("Creating data frames..")
         self.df["PMV"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["PCE-Ambient-Temp"], self.df["Ambient_Humidity"])
-        self.df["PMV_rounded"] = np.round(self.df["PMV"], 0).astype(np.int64)
-        correct = (self.df.loc[self.df["PMV_rounded"]==self.df["Label"]]).shape[0]
+        x =  np.expand_dims(self.df["PMV"].values, axis=1)
+        x = np.repeat(x, 6, axis=1)
+        pad = np.ones((x.shape[0],6))
+        c = np.multiply(pad,x[:])
+        # print(t)
+        #c = torch.cat((x,t), dim=1)
+        #tmp = (c[::]>self.cut_points[::])
+        idx = np.sum((c[::]>self.cut_points[::]), axis=1)
+        predictions = idx-3
+        #self.df["PMV_rounded"] = np.round(self.df["PMV"], 0).astype(np.int64)
+        correct = np.sum(predictions==self.df["Label"].values)
         total = self.df.shape[0]
+        print(np.concatenate((np.expand_dims(predictions, axis=1), np.expand_dims(self.df["Label"].values, axis=1)), axis=1))
         self.pmv_accuracy = correct/total
-        self.mse = np.mean((self.df["PMV"]-self.df["Label"])**2)
-        self.mae = np.mean(np.abs(self.df["PMV"]-self.df["Label"]))
+        self.mse = np.mean((predictions-self.df["Label"].values)**2)
+        self.mae = np.mean(np.abs(predictions-self.df["Label"].values))
         #print("File contents loaded!")
         
-# if __name__ == "__main__":
+if __name__ == "__main__":
     
-#     pmv_res = PMV_Results()
-#     print(pmv_res.pmv_accuracy)    
-#     print(pmv_res.mse)
-#     print(pmv_res.mae)
-#     print(pmv_res.df["PMV_rounded"], pmv_res.df["Label"])
+    pmv_res = PMV_Results()
+    print(pmv_res.pmv_accuracy)    
+    print(pmv_res.mse)
+    print(pmv_res.mae)
+    #print(pmv_res.df["PMV_rounded"], pmv_res.df["Label"])
 
     
