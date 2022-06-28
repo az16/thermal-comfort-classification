@@ -41,7 +41,7 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=None):
+    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
         self.split = split 
         self.root = root 
         self.forecasting = forecasting
@@ -116,7 +116,8 @@ class TC_Dataloader(BaseDataset):
         print("Loading contents..")
         if self.use_imgs:
             frames = [pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)]
-            self.df = pd.concat([x.drop(x.tail(1000).index, inplace = True) for x in frames])
+            frames = [x.drop(x.tail(1000).index) for x in frames]
+            self.df = pd.concat(frames)
         else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
         if not self.downsample is None:
             self.df = self.df[self.df.index % self.downsample == 0] 
