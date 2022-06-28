@@ -41,9 +41,10 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None):
+    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=None):
         self.split = split 
         self.root = root 
+        self.forecasting = forecasting
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
         self.augment_data = data_augmentation
         self.output_size = output_size
@@ -123,17 +124,6 @@ class TC_Dataloader(BaseDataset):
             self.df.rename({self.col_label:"Label"})
         print("Creating data frames..")
         
-        # limit = 0
-        # size = len(self.df)
-        # if split == "training":
-        #     limit = int(size*0.6)
-        #     self.df = self.df[0:limit]
-        # elif split == "validation":
-        #     limit = int(size*0.6), int(size*0.6)+int(size*0.2)
-        #     self.df = self.df[limit[0]:limit[1]]
-        # elif split == "test":
-        #     limit = size - int(size*0.2)
-        #     self.df = self.df[limit:]
         print("File contents loaded!")
         
     def preprocess(self):
@@ -157,20 +147,22 @@ class TC_Dataloader(BaseDataset):
             if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
         
                 print("Outlier removal..")
-                #data cleaning (outlier removal + removal of empty columns)
-                # for key in self.columns:
-                #     if key in optional:
-                #         masks.append(no_answer_mask(self.df[key]))
-                #     elif key in numeric_safe:
-                #         masks.append(clean(self.df[key])) 
-                
-                # if len(masks) > 0:
-                #     full_mask = make_mask(tuple(masks))
-                #     self.df = self.df.loc[full_mask, :]
                 
                 for key in numeric_safe:
                     if key in self.columns:  
                         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
+                #data cleaning (outlier removal + removal of empty columns)
+                
+                for key in self.columns:
+                    if key in optional:
+                        masks.append(no_answer_mask(self.df[key]))
+                    elif key in numeric_safe:
+                        masks.append(clean(self.df[key])) 
+                
+                if len(masks) > 0:
+                    full_mask = make_mask(tuple(masks))
+                    self.df = self.df.loc[full_mask, :]
+
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
@@ -330,8 +322,8 @@ class TC_Dataloader(BaseDataset):
        
         label = np.array(self.df.iloc[[index], -1])
         if self.use_sequence:
-            if index+self.sequence_size < self.__len__():
-                window = index+self.sequence_size
+            if index+self.sequence_size+self.forecasting < self.__len__():
+                window = index+self.sequence_size+self.forecasting
                 limit = window
                 label = np.array(self.df.iloc[limit, -1])
             else: 
@@ -369,7 +361,7 @@ class TC_Dataloader(BaseDataset):
             int: number of rows int the dataset
         """        
         #print(self.df.shape[0])
-        return self.df.shape[0]
+        return self.df.shape[0]-(self.sequence_size+self.forecasting)
     
     
 

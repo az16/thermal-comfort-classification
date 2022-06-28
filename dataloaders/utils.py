@@ -104,7 +104,7 @@ header = ["Timestamp",
           "Ambient_Humidity",
           "Label"]
 
-numeric_safe = [ "Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
+numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
 high_outliers = ["Heart_Rate","GSR"]
 numeric_unsafe = ["Age", "Time-Since-Meal", "Bodytemp", "Weight", "Height", "Bodyfat"]
 categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
