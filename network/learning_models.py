@@ -114,7 +114,7 @@ class RCNN(nn.Module):
         
         self.activation = nn.Sigmoid() #Softmax activation with 7 classes 
         
-        #self.freeze_resnet()
+        self.freeze_resnet()
 
     def freeze_resnet(self):
         for param in self.feature_extractor.parameters():
