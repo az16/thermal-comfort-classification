@@ -118,9 +118,12 @@ class TC_Dataloader(BaseDataset):
             frames = [pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)]
             frames = [x.drop(x.tail(1000).index) for x in frames]
             self.df = pd.concat(frames)
-        else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])
+        else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
         if not self.downsample is None:
+            # print(self.df.shape)
+            # print(self.downsample)
             self.df = self.df[self.df.index % self.downsample == 0] 
+            # print(self.df.shape)
         if self.use_col_as_label:
             self.df.rename({self.col_label:"Label"})
         print("Creating data frames..")
@@ -134,6 +137,7 @@ class TC_Dataloader(BaseDataset):
         and normalization to [0,1]
         """
         print("Pre-processing..")
+        #print(self.df.shape)
         masks = []
         if not self.columns == image_only:
             #Load types
@@ -144,7 +148,7 @@ class TC_Dataloader(BaseDataset):
             
             #Assign correct types for specified columns
             self.df.astype(data_type_dict)
-        
+            #print(self.df.shape)
             if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
         
                 print("Outlier removal..")
@@ -324,21 +328,34 @@ class TC_Dataloader(BaseDataset):
        
         label = np.array(self.df.iloc[[index], -1])
         if self.use_sequence:
-            if index+self.sequence_size+self.forecasting < self.__len__():
+            if index+self.sequence_size+self.forecasting < self.df.shape[0]:
                 window = index+self.sequence_size+self.forecasting
                 limit = window
                 label = np.array(self.df.iloc[limit, -1])
             else: 
-                limit = self.__len__()-1
+                limit = self.self.df.shape[0]-1
                 label = np.array(self.df.iloc[limit, -1])
                 if index == limit:
                     limit += 1
         #print(np.array(self.df.iloc[[index], :-1]).dtype)
         out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
         label = torch.from_numpy(label)
-        
+        # print(limit)
+        # print(limit-self.forecasting < self.__len__())
+        x = limit
+        # if not(limit == self.__len__()):
+            
+        #     if limit-self.forecasting < self.__len__():
+        #         limit -= self.forecasting
+        #         if limit < index:
+        #             index -= (self.forecasting+self.sequence_size)
+        # else:
+        #     limit = self.__len__()-1
+        #     if index == limit:
+        #         limit += 1
         if self.use_sequence:
             out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
+            # print(out.shape)
 
             if not self.use_col_as_label:
                 label = label2idx(label)
@@ -346,6 +363,7 @@ class TC_Dataloader(BaseDataset):
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
+                print(out.shape, index, (x,limit))
                 pad_range = self.sequence_size-out.shape[0]
                 last_sequence_line = torch.unsqueeze(out[-1], dim=0)
                 for i in range(0,pad_range):
@@ -362,7 +380,8 @@ class TC_Dataloader(BaseDataset):
         Returns:
             int: number of rows int the dataset
         """        
-        #print(self.df.shape[0])
+        # print(self.df.shape[0])
+        # print(self.df.shape[0]-(self.sequence_size+self.forecasting))
         return self.df.shape[0]-(self.sequence_size+self.forecasting)
     
     

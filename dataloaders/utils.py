@@ -423,7 +423,7 @@ def remove_grouped_outliers(group, col, df):
         df = df.drop(df[(((df[col] > upper[bound_index]) | (df[col] < lower[bound_index])) & (df[group]==c_label))].index)
         bound_index += 1
         #df = df.loc[df[col] >= lower[i] and df["Label"]==c_label]
-    print(df.shape)
+    #print(df.shape)
     return df
 
 def get_change_rate(df, look_ahead_window=1000):
