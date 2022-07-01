@@ -149,13 +149,16 @@ class TC_Dataloader(BaseDataset):
             
             #Assign correct types for specified columns
             self.df.astype(data_type_dict)
-            self.df = narrow_labels(self.df, self.scale)
+            
             #print(self.df.shape)
             if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
         
                 print("Outlier removal..")
                 
                 #data cleaning (outlier removal + removal of empty columns)
+                for key in grouped_removal:
+                    if key in self.columns:  
+                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
                 
                 for key in self.columns:
                     if key in optional:
@@ -167,10 +170,6 @@ class TC_Dataloader(BaseDataset):
                     full_mask = make_mask(tuple(masks))
                     self.df = self.df.loc[full_mask, :]
                     
-                for key in grouped_removal:
-                    if key in self.columns:  
-                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
-
 
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
@@ -219,7 +218,7 @@ class TC_Dataloader(BaseDataset):
         #     print(self.df[col])
         #     print(self.df[col].values.dtype)
         
-            
+        self.df = narrow_labels(self.df, self.scale)
         print("Pre-processing done!\r\n")
     
     def train_transform(self, rgb):
@@ -309,7 +308,7 @@ class TC_Dataloader(BaseDataset):
             #out = torch.unsqueeze(out, dim=1)
             #out = torch.cat(out, dim=1)
             label = label2idx(label)
-            label = order_representation(label)
+            label = order_representation(label, scale=self.scale)
             label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
@@ -362,7 +361,7 @@ class TC_Dataloader(BaseDataset):
 
             if not self.use_col_as_label:
                 label = label2idx(label)
-                label = order_representation(label)
+                label = order_representation(label, scale=self.scale)
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:

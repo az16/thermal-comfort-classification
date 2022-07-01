@@ -139,7 +139,7 @@ def narrow_labels(df, scale=2):
             # df = df[x]
             # x = df["Label"] == 1
             # x = ~x
-            #df = df[x]
+            # df = df[x]
             df.loc[(df["Label"] == -3), "Label"] = -1
             df.loc[(df["Label"] == -2), "Label"] = -1
             #df.loc[(df["Label"] == -1), "Label"] = -1
@@ -411,16 +411,16 @@ def label2idx(label):
     except:
         return np.array(label)
 
-def order_representation(label, sklearn=False):
+def order_representation(label, sklearn=False, scale=7):
     if sklearn:
         return sk_order_representation(label)
     # print(label)
     # print(label.shape)
-    if label == 6:
+    if label == scale-1:
         #print(np.ones(shape=(7)))
-        return np.ones(shape=(7))
+        return np.ones(shape=(scale))
     else:
-        category_vector = np.ones(shape=(7))
+        category_vector = np.ones(shape=(scale))
         category_vector[np.int8(label)+1:] = 0
         #print(category_vector)
         return category_vector
