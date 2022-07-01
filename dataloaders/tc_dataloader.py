@@ -41,10 +41,11 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
+    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
         self.split = split 
         self.root = root 
         self.forecasting = forecasting
+        self.scale = scale
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
         self.augment_data = data_augmentation
         self.output_size = output_size
@@ -148,6 +149,7 @@ class TC_Dataloader(BaseDataset):
             
             #Assign correct types for specified columns
             self.df.astype(data_type_dict)
+            self.df = narrow_labels(self.df, self.scale)
             #print(self.df.shape)
             if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
         
@@ -216,6 +218,7 @@ class TC_Dataloader(BaseDataset):
         # for col in self.columns:
         #     print(self.df[col])
         #     print(self.df[col].values.dtype)
+        
             
         print("Pre-processing done!\r\n")
     

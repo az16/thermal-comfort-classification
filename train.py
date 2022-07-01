@@ -38,6 +38,8 @@ if __name__ == "__main__":
     parser.add_argument('--data_augmentation', action='store_true', help='Do data augmentation on csv features.')
     parser.add_argument('--skiprows', type=int, default=26, help='How many rows to skip while reading data lines')
     parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
+    parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
+    
     
 
 
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
     tc_module = None 
     if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, preprocessing, augmentation)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting)
+    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale)
     elif args.module == "rcnn": tc_module = TC_RCNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path, preprocessing, augmentation, args.skiprows) 
     print(args)
     print("Using {0} lightning module.".format(args.module.upper()))
