@@ -404,8 +404,11 @@ def emotion2Id(x):
         i += 1
     return x
     
-def label2idx(label):
+def label2idx(label, scale=7):
     idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
+    if scale == 2: idx = [0.0,1.0]
+    elif scale == 3: idx = [1.0,0.0,1.0]
+    
     try:
         return np.array(float(idx.index(label)))
     except:
