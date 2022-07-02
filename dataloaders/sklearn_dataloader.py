@@ -209,7 +209,7 @@ class TC_Dataloader():
         #     self.train_df = self.train_df.loc[full_mask, :]
         
         #print(self.train_df.shape)
-        self.train_df = self.narrow_labels(self.train_df)
+        #self.train_df = self.narrow_labels(self.train_df)
        
         self.train_df = self.train_df[self.train_df.index % 100== 0] 
         
@@ -298,10 +298,10 @@ class TC_Dataloader():
         #     full_mask = make_mask(tuple(masks_v))
         #     self.val_df = self.val_df.loc[full_mask, :]
         
-        # for key in tqdm(numeric_safe, desc="Removing outliers"):
-        #     if key in self.columns:
-        #         self.train_df = remove_grouped_outliers(group='Label', col=key, df=self.train_df)
-        #         self.val_df = remove_grouped_outliers(group='Label', col=key, df=self.val_df)
+        for key in tqdm(numeric_safe, desc="Removing outliers"):
+            if key in self.columns:
+                self.train_df = remove_grouped_outliers(group='Label', col=key, df=self.train_df)
+                self.val_df = remove_grouped_outliers(group='Label', col=key, df=self.val_df)
         
         # self.train_df["Ambient_Temperature_Delta"] = get_change_rate(self.train_df["Ambient_Temperature"])
         # self.val_df["Ambient_Temperature_Delta"] = get_change_rate(self.val_df["Ambient_Temperature"])
@@ -312,7 +312,7 @@ class TC_Dataloader():
         self.train_df = self.train_df[self.train_df.index % 100 == 0]
         # self.train_df = self.narrow_labels(self.train_df) 
         # self.val_df = self.narrow_labels(self.val_df) 
-        # self.val_df = self.val_df[self.val_df.index % 41 == 0] 
+        #self.val_df = self.val_df[self.val_df.index % 100 == 0] 
         # self.test_df = self.test_df[self.test_df.index % 41 == 0]
         #self.train_df = self.train_df.sample(frac=1).reset_index(drop=True)
         #self.val_df = self.val_df.sample(frac=1).reset_index(drop=True)

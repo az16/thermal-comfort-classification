@@ -120,6 +120,7 @@ class TC_Dataloader(BaseDataset):
             frames = [x.drop(x.tail(1000).index) for x in frames]
             self.df = pd.concat(frames)
         else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
+        self.df = narrow_labels(self.df, self.scale)
         if not self.downsample is None:
             # print(self.df.shape)
             # print(self.downsample)
@@ -218,7 +219,6 @@ class TC_Dataloader(BaseDataset):
         #     print(self.df[col])
         #     print(self.df[col].values.dtype)
         
-        self.df = narrow_labels(self.df, self.scale)
         print("Pre-processing done!\r\n")
     
     def train_transform(self, rgb):
@@ -307,7 +307,7 @@ class TC_Dataloader(BaseDataset):
             out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
             #out = torch.unsqueeze(out, dim=1)
             #out = torch.cat(out, dim=1)
-            label = label2idx(label)
+            label = label2idx(label, scale=self.scale)
             label = order_representation(label, scale=self.scale)
             label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
@@ -360,7 +360,7 @@ class TC_Dataloader(BaseDataset):
             # print(out.shape)
 
             if not self.use_col_as_label:
-                label = label2idx(label)
+                label = label2idx(label, scale = self.scale)
                 label = order_representation(label, scale=self.scale)
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
