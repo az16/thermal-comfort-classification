@@ -142,9 +142,9 @@ def narrow_labels(df, scale=2):
             # df = df[x]
             df.loc[(df["Label"] == -3), "Label"] = -1
             df.loc[(df["Label"] == -2), "Label"] = -1
-            #df.loc[(df["Label"] == -1), "Label"] = -1
+            df.loc[(df["Label"] == -1), "Label"] = 0
             df.loc[(df["Label"] == 0), "Label"] = 0
-            #df.loc[(df["Label"] == -1), "Label"] = 1
+            df.loc[(df["Label"] == -1), "Label"] = 0
             df.loc[(df["Label"] == 2), "Label"] = 1
             df.loc[(df["Label"] == 3), "Label"] = 1
             #print(df)

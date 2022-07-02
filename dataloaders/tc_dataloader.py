@@ -120,6 +120,7 @@ class TC_Dataloader(BaseDataset):
             frames = [x.drop(x.tail(1000).index) for x in frames]
             self.df = pd.concat(frames)
         else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
+        self.df = narrow_labels(self.df, self.scale)
         if not self.downsample is None:
             # print(self.df.shape)
             # print(self.downsample)
@@ -217,7 +218,7 @@ class TC_Dataloader(BaseDataset):
         # for col in self.columns:
         #     print(self.df[col])
         #     print(self.df[col].values.dtype)
-        self.df = narrow_labels(self.df, self.scale)
+        
         print("Pre-processing done!\r\n")
     
     def train_transform(self, rgb):
