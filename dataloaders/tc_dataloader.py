@@ -157,6 +157,7 @@ class TC_Dataloader(BaseDataset):
                 print("Outlier removal..")
                 
                 #data cleaning (outlier removal + removal of empty columns)
+
                 for key in grouped_removal:
                     if key in self.columns:  
                         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
@@ -171,7 +172,9 @@ class TC_Dataloader(BaseDataset):
                     full_mask = make_mask(tuple(masks))
                     self.df = self.df.loc[full_mask, :]
                     
-
+            print(np.sum((self.df["Label"]==-1)))
+            print(np.sum((self.df["Label"]==0)))
+            print(np.sum((self.df["Label"]==1)))
             #print("len dataframe after masking: {0}".format(self.__len__()))
             #calculate pmv index
             #assert check_pmv_vars(self.columns); "Can't calculate pmv index as not all values are included in the dataframe"

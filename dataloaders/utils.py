@@ -134,21 +134,23 @@ def narrow_labels(df, scale=2):
             return df
         elif scale==3:
             print("3-Point scale transformation.")
-            # x = df["Label"] == -1
-            # x = ~x
-            # df = df[x]
-            # x = df["Label"] == 1
-            # x = ~x
-            # df = df[x]
-            df.loc[(df["Label"] == -1), "Label"] = 0
+           
+            # rescale = {-1: 0, -3:-1, -2:-1, 1:0, 2:1, 3:1}
+            # df["Label"].replace(rescale, inplace=True)
+            print(np.sum((df["Label"]==-3))+np.sum((df["Label"]==-2)))
+            print(np.sum((df["Label"]==-1))+np.sum((df["Label"]==1))+np.sum((df["Label"]==0)))
+            print(np.sum((df["Label"]==2))+np.sum((df["Label"]==3)))
+            #df.loc[(df["Label"] == -1), "Label"] = 0
             df.loc[(df["Label"] == -3), "Label"] = -1
             df.loc[(df["Label"] == -2), "Label"] = -1
             df.loc[(df["Label"] == 0), "Label"] = 0
-            df.loc[(df["Label"] == 1), "Label"] = 0
+            #df.loc[(df["Label"] == 1), "Label"] = 0
             df.loc[(df["Label"] == 2), "Label"] = 1
             df.loc[(df["Label"] == 3), "Label"] = 1
+            print(np.sum((df["Label"]==-1)))
+            print(np.sum((df["Label"]==0)))
+            print(np.sum((df["Label"]==1)))
             #print(df)
-            #ck = df.groupby("Label")
             return df
         return df
             
