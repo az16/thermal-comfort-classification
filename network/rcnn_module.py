@@ -12,20 +12,25 @@ from dataloaders.path import *
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RCNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, preprocess, augmentation, skip, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, im_path, preprocess, augmentation, skip, scale, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
         #self.metric_logger = MetricLogger(metrics=metrics, module=self, gpu=gpu_mode)
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
+        if scale == 2:
+            self.label_names = ["0","1"]
+        elif scale == 3:
+            self.label_names = ["-1", "0", "1"]
+            
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask, downsample=skip),
+        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, use_imgs=True, image_path=im_path, cols=mask, downsample=skip, scale=scale),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=cpu_count(), 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask, downsample=skip),
+        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, use_imgs=True,  image_path=im_path, cols=mask, downsample=skip, scale=scale),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=cpu_count(), 
@@ -48,7 +53,7 @@ class TC_RCNN_Module(pl.LightningModule):
         self.val_labels = []
         
         num_features = len(mask)-1 #-1 to neglect labels
-        num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
+        num_categories = scale #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         print("Use GPU: {0}".format(gpu_mode))
         if gpu_mode: self.model = RCNN(num_features, num_categories, hidden=hidden, n_layers=layers, dropout=dropout).cuda()#; self.acc_train = self.acc_train.cuda(); self.acc_val = self.acc_val.cuda();self.acc_test= self.acc_test.cuda()
         else: self.model = RCNN(num_features, num_categories, hidden=hidden, n_layers=layers, dropout=dropout)
