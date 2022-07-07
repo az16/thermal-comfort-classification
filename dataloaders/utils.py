@@ -118,17 +118,19 @@ def narrow_labels(df, scale=2):
         #print(df["Label"])
         if scale==2:
             print("2-Point scale transformation.")
-            x = df["Label"] == 0
-            x = ~x
-            df = df[x]
+            # x = df["Label"] == 0
+            # x = ~x
+            # df = df[x]
             # x = df["Label"] == 1
             # x = ~x
             # df = df[x]
             df.loc[(df["Label"] == -3), "Label"] = 0
             df.loc[(df["Label"] == -2), "Label"] = 0
-            df.loc[(df["Label"] == -1), "Label"] = 0
-            df.loc[(df["Label"] == 2), "Label"] = 1
-            df.loc[(df["Label"] == 3), "Label"] = 1
+            df.loc[(df["Label"] == -1), "Label"] = 1
+            df.loc[(df["Label"] == 0), "Label"] = 1
+            df.loc[(df["Label"] == 1), "Label"] = 1
+            df.loc[(df["Label"] == 2), "Label"] = 0
+            df.loc[(df["Label"] == 3), "Label"] = 0
             #print(df)
             #ck = df.groupby("Label")
             return df

@@ -157,10 +157,6 @@ class TC_Dataloader(BaseDataset):
                 print("Outlier removal..")
                 
                 #data cleaning (outlier removal + removal of empty columns)
-
-                for key in grouped_removal:
-                    if key in self.columns:  
-                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
                 
                 for key in self.columns:
                     if key in optional:
@@ -171,6 +167,10 @@ class TC_Dataloader(BaseDataset):
                 if len(masks) > 0:
                     full_mask = make_mask(tuple(masks))
                     self.df = self.df.loc[full_mask, :]
+
+                for key in grouped_removal:
+                    if key in self.columns:  
+                        self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
                     
             print(np.sum((self.df["Label"]==-1)))
             print(np.sum((self.df["Label"]==0)))
@@ -346,11 +346,8 @@ class TC_Dataloader(BaseDataset):
         label = torch.from_numpy(label)
         # print(limit)
         # print(limit-self.forecasting < self.__len__())
-        x = limit
-        # if not(limit == self.__len__()):
-            
-        #     if limit-self.forecasting < self.__len__():
-        #         limit -= self.forecasting
+        
+        limit -= self.forecasting
         #         if limit < index:
         #             index -= (self.forecasting+self.sequence_size)
         # else:
@@ -367,7 +364,7 @@ class TC_Dataloader(BaseDataset):
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
-                print(out.shape, index, (x,limit))
+                #print(out.shape, index, (x,limit))
                 pad_range = self.sequence_size-out.shape[0]
                 last_sequence_line = torch.unsqueeze(out[-1], dim=0)
                 for i in range(0,pad_range):
