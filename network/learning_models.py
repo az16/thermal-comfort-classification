@@ -5,6 +5,9 @@ import torchvision as tv
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 #from network.computations import categoryFromOutput
 
+"""
+    This file includes all learning models used in the master thesis
+"""
 class MLP(nn.Module):
     def __init__(self, input_size, num_categories):
         super(MLP, self).__init__()
@@ -153,7 +156,7 @@ class RandomForest():
     def __init__(self, n_estimators=400, max_depth=8, critirion='gini', bootstrap=True, cv=True, max_features="auto", min_samples_leaf=3, min_samples_split=2):
         self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,random_state=2,max_samples=200)
         if not cv:
-            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,random_state=2,max_samples=200)
+            self.rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=critirion, bootstrap=bootstrap, verbose=0, min_samples_leaf=3, min_samples_split=2,random_state=2,max_samples=475)
         
     
     def fit(self, train_inputs, train_labels):

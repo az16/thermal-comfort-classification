@@ -1,8 +1,5 @@
-#from dataloaders.dataset import *
 from dataloaders.path import Path
 from dataloaders.utils import *
-# from path import Path
-# from utils import *
 import pandas as pd 
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -29,8 +26,6 @@ class PMV_Results():
             split (str): training or validation split string
         """
         
-        #find files
-        #print("Searching for {0} files..".format(self.split))
         file_names = [] #os.listdir(Path.db_root_dir("tcs"))
         with open("./dataloaders/splits/{0}_{1}.txt".format("validation", 60)) as file:
             lines = file.readlines()
@@ -38,7 +33,6 @@ class PMV_Results():
         assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
             
         file_names = [Path.db_root_dir("tcs")+x for x in file_names]
-        #print("Found {0} {1} files at {2}".format(len(file_names),self.split,Path.db_root_dir("tcs")))
 
         #load .csv contents as list
         print("Calculating PMV results..")
@@ -66,6 +60,16 @@ class PMV_Results():
         #print("File contents loaded!")
 
 def clf_tree(x,y,label_names, name):
+    """
+       Creates a confusion matrix given labels and prediction.
+
+
+        Args:
+            x: preds
+            y: targets
+            label_names: target label names
+            names: pred label names
+        """
     #print(preds, labels)
     cfm = confusion_matrix(y, x, labels=label_names, normalize='true')
     #print(cfm)

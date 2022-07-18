@@ -210,20 +210,20 @@ class TC_Dataloader(BaseDataset):
             if self.split == 'validation': 
                 self.df["RGB_Frontal_View"]=self.df["RGB_Frontal_View"].replace({'_6_': '_5_'}, regex=True)
             paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
-            #print(paths)
-                
-            # print(paths[0])
-            # print(os.path.exists(paths[0]))
             self.df.pop("RGB_Frontal_View")
             self.img_list = paths
-        
-        # for col in self.columns:
-        #     print(self.df[col])
-        #     print(self.df[col].values.dtype)
+   
         
         print("Pre-processing done!\r\n")
     
     def train_transform(self, rgb):
+        """
+        This function defines the data augmentation for training images
+
+
+        Args:
+            rgb: the rgb image tensor to do data augmentation for
+        """
         if not rgb is None:
             angle = np.random.uniform(-5.0, 5.0)  # random rotation degrees
             do_flip = np.random.uniform(0.0, 1.0) < 0.5  # random horizontal flip
@@ -237,7 +237,12 @@ class TC_Dataloader(BaseDataset):
         return rgb
     
     def val_transform(self, rgb):
+        """
+        This function defines the data augmentation for validation images.
 
+        Args:
+            rgb: the rgb image tensor to do data augmentation for
+        """
         rgb = center_crop(rgb, self.crop_size)
         rgb = cv2.resize(rgb, self.output_size, interpolation=cv2.INTER_AREA)
         rgb = np.asfarray(rgb, dtype='float') / 255
@@ -259,6 +264,14 @@ class TC_Dataloader(BaseDataset):
         else: return self.__csv_only_return__(index)
             
     def __img_return__(self, index):
+        """
+        This function defines how input and labels are returned if images are supposed
+        to be used for training.
+
+
+        Args:
+            index: the index in the dataframe to draw data from
+        """
         limit = index+1
         # print(len(self.df["Label"]))
         # print(self.__len__())
@@ -328,6 +341,14 @@ class TC_Dataloader(BaseDataset):
         return (rgb_input, out.float()), label.long()#.type(torch.LongTensor)
     
     def __csv_only_return__(self, index):
+        """
+        This function defines how input and labels are returned if only csv values
+        are supposed to be used for training.
+
+
+        Args:
+            index: the index in the dataframe to draw data from
+        """
         limit = index+1
        
         label = np.array(self.df.iloc[[index], -1])

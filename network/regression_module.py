@@ -8,7 +8,9 @@ from metrics import Accuracy, MAELoss
 from multiprocessing import cpu_count
 import numpy as np
 
-
+"""
+    The training module for the MLP architecture is defined here. If MLP training is supposed to be adjusted, change this.
+"""
 gpu_mode=False
 
 class TC_MLP_Module(pl.LightningModule):
@@ -55,6 +57,12 @@ class TC_MLP_Module(pl.LightningModule):
         else: self.model = MLP(num_features, num_categories)
 
     def convert_to_list(self, config_string):
+        """
+            Takes an input string that contains a list and turns it into a regular python list.
+            
+            Args:
+                config_string: the string specified in the run script (contains all training params)
+        """
         trimmed_brackets = config_string[1:len(config_string)-1]
         idx = trimmed_brackets.split(",")
         r = []
@@ -64,6 +72,9 @@ class TC_MLP_Module(pl.LightningModule):
         return r
         
     def configure_optimizers(self):
+        """
+            Sets up optmizers and defines learning rate decay.
+        """
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
@@ -92,6 +103,13 @@ class TC_MLP_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
+        """
+            Defines what happens during one training step.
+            
+            Args:
+                batch: the current training batch that is used
+                batch_idx: the id of the batch
+        """
         if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
@@ -118,6 +136,13 @@ class TC_MLP_Module(pl.LightningModule):
         return {"loss": loss}
     
     def validation_step(self, batch, batch_idx):
+        """
+            Defines what happens during one validation step.
+            
+            Args:
+                batch: the current validation batch that is used
+                batch_idx: the id of the batch
+        """
         if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
@@ -142,6 +167,9 @@ class TC_MLP_Module(pl.LightningModule):
         return {"loss": loss}
         
     def on_validation_end(self):
+        """
+            Defines what happens after validation is done for one epoch.
+        """
         if len(self.train_preds) > 0:
             compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
         if len(self.val_preds) > 0:
@@ -166,6 +194,14 @@ class TC_MLP_Module(pl.LightningModule):
         return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
+        """
+            This method is used to convert predictions and labels to a representation
+            that can be turned into a confusion matrix.
+            
+            Args:
+                preds: the model predictions
+                y: the labels
+        """
         preds = torch.sum(torch.round(preds.cpu()), dim=1)
         preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
         # print(preds)
@@ -174,25 +210,3 @@ class TC_MLP_Module(pl.LightningModule):
         y = torch.sum(y.cpu().long(), dim=1)
         y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
         return preds, y
-    
-    def discretize(self, x, categories=7):
-        B, _ = x.size()
-        #cut_points = torch.repeat_interleave(torch.unsqueeze(self.b,dim=0), B, dim=0)
-        #values = torch.ones((B,1))*x
-        #return torch.squeeze(torch.bucketize(values, self.b))
-        b = torch.arange(0.0,1.0, 1/(categories*2))[1:]
-        b = b[1::2]
-        pad = torch.ones((B,5))
-        if x.is_cuda:
-            pad = pad.cuda()
-            b = b.cuda()
-        pad.requires_grad=True
-        t = torch.multiply(pad,x)
-        # print(t)
-        c = torch.cat((x,t), dim=1)
-        # print(c)
-        # print(self.b)
-        x = torch.sum((c[::]>b[::]), dim=1).float()
-        x.requires_grad=True
-        # print(x.requires_grad)
-        return x

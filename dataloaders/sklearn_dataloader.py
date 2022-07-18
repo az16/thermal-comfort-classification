@@ -72,23 +72,32 @@ class TC_Dataloader():
             self.load_and_split_full()
     
     def narrow_labels(self, df):
-        #df = df[~df.Label==0]
-        #print(df["Label"])
-        x = df["Label"] == 0
-        x = ~x
-        df = df[x]
-        # x = df["Label"] == 1
-        # x = ~x
-        # df = df[x]
-        df.loc[(df["Label"] == -3), "Label"] = 0
-        df.loc[(df["Label"] == -2), "Label"] = 0
+        """
+            Defines how the labeling scale is supposed to be reduced.
+            
+            Args:
+                df: the dataframe
+        """
+        df.loc[(df["Label"] == 0), "Label"] = 0
+        df.loc[(df["Label"] == 1), "Label"] = 0
         df.loc[(df["Label"] == -1), "Label"] = 0
-        #df.loc[(df["Label"] == 0), "Label"] = 0
-        #df.loc[(df["Label"] == 1), "Label"] = 1
+        df.loc[(df["Label"] == -3), "Label"] = 1
+        df.loc[(df["Label"] == -2), "Label"] = 1
         df.loc[(df["Label"] == 2), "Label"] = 1
         df.loc[(df["Label"] == 3), "Label"] = 1
-        #print(df)
-        #ck = df.groupby("Label")
+        # df.loc[((df["Label"] >= -0.5) & (df["Label"] <= 0.5)), "Label"] = 0
+        # df.loc[(df["Label"] > 0.5), "Label"] = 1
+        # df.loc[(df["Label"] < -0.5), "Label"] = 1
+        # #print(np.sum((df["Label"]> 0.5)))
+        # print(np.sum((df["Label"] == 1)))
+        # print(np.sum((df["Label"] == 0)))
+        #print(np.sum((df["Label"] == -1)))
+        # df.loc[(df["Label"] == -3), "Label"] = -1
+        # df.loc[(df["Label"] == -2), "Label"] = -1
+        # df.loc[(df["Label"] == 0), "Label"] = 0
+        # df.loc[(df["Label"] == 1), "Label"] = 0
+        # df.loc[(df["Label"] == 2), "Label"] = 1
+        # df.loc[(df["Label"] == 3), "Label"] = 1
         return df
         
     def cross_validation(self):
@@ -166,6 +175,10 @@ class TC_Dataloader():
         print("Done.\r\n")
     
     def load_all(self):
+        """
+            Loads complete dataset and splits later 
+        """
+        
         split = "training"
         print("Searching for {0} files..".format(split))
         train_file_names = os.listdir(Path.db_root_dir("tcs"))
@@ -199,17 +212,17 @@ class TC_Dataloader():
                 post = pre-self.train_df.shape[0]
                 print("Shape after cleaning {0}. Removed {1}.".format(self.train_df.shape, post))
     
-        # masks = []
-        # for key in self.columns:
-        #     if key in high_outliers:
-        #         masks.append(clean(self.train_df[key])) 
+        masks = []
+        for key in self.columns:
+            if key in high_outliers:
+                masks.append(clean(self.train_df[key])) 
         
-        # if len(masks) > 0:
-        #     full_mask = make_mask(tuple(masks))
-        #     self.train_df = self.train_df.loc[full_mask, :]
+        if len(masks) > 0:
+            full_mask = make_mask(tuple(masks))
+            self.train_df = self.train_df.loc[full_mask, :]
         
         #print(self.train_df.shape)
-        #self.train_df = self.narrow_labels(self.train_df)
+        self.train_df = self.narrow_labels(self.train_df)
        
         self.train_df = self.train_df[self.train_df.index % 100== 0] 
         
@@ -226,10 +239,6 @@ class TC_Dataloader():
         """
         Loads .csv data as np.array and splits input signals/labels.
 
-
-        Args:
-            root (str): path of the root directory
-            split (str): training or validation split string
         """
         
         #find files
@@ -336,6 +345,9 @@ class TC_Dataloader():
         print("Done.\r\n")
     
     def load_and_split_full(self):
+        """
+            Loads complete dataset and splits based on relative size (80 training / 20 validation) 
+        """
         split = "training"
         print("Searching for {0} files..".format(split))
         train_file_names = os.listdir(Path.db_root_dir("tcs"))
@@ -397,6 +409,10 @@ class TC_Dataloader():
         self.test_Y = self.test_df[self.dependent]
     
     def preprocess(self):
+        """
+            Defines preprocessing for sklearn training.
+            Empty column removal and gender encodings are done. 
+        """
         # self.train_df = emotion2Id(self.train_df).astype({"Emotion-ML": np.int64})
         # self.test_df = emotion2Id(self.test_df).astype({"Emotion-ML": np.int64})
         #print(self.train_df.columns.values.tolist())
@@ -422,6 +438,9 @@ class TC_Dataloader():
         # self.test_df["Emotion-ML"] = one_hot(np.array(self.test_df["Emotion-ML"]), classes=7)
             
     def splits(self, mask=None):
+        """
+            Delivers dataset splits depending on what kind of data loading was specified. 
+        """
         if self.full_set and not mask is None:
             return self.all_X[mask], self.all_Y
         if self.full_set and mask is None:

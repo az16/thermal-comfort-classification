@@ -8,6 +8,11 @@ from network.rnn_module import TC_RNN_Module
 from network.regression_module import TC_MLP_Module
 from network.rcnn_module import TC_RCNN_Module
 
+"""
+    In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called
+"""
+
+
 if __name__ == "__main__":
     
     

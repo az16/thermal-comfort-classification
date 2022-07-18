@@ -9,7 +9,9 @@ from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
 
-
+"""
+    The training module for the LSTM architecture is defined here. If LSTM training is supposed to be adjusted, change this.
+"""
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
@@ -61,6 +63,12 @@ class TC_RNN_Module(pl.LightningModule):
         else: self.model = RNN(num_features, num_categories, hidden_dim=hidden, n_layers=layers, dropout=dropout)
 
     def convert_to_list(self, config_string):
+        """
+            Takes an input string that contains a list and turns it into a regular python list.
+            
+            Args:
+                config_string: the string specified in the run script (contains all training params)
+        """
         trimmed_brackets = config_string[1:len(config_string)-1]
         idx = trimmed_brackets.split(",")
         r = []
@@ -70,6 +78,9 @@ class TC_RNN_Module(pl.LightningModule):
         return r
         
     def configure_optimizers(self):
+        """
+            Sets up optmizers and defines learning rate decay.
+        """
         train_param = self.model.parameters()
         # Training parameters
         optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
@@ -98,6 +109,13 @@ class TC_RNN_Module(pl.LightningModule):
         return self.test_loader                                          
 
     def training_step(self, batch, batch_idx):
+        """
+            Defines what happens during one training step.
+            
+            Args:
+                batch: the current training batch that is used
+                batch_idx: the id of the batch
+        """
         if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
@@ -124,6 +142,13 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
     
     def validation_step(self, batch, batch_idx):
+        """
+            Defines what happens during one validation step.
+            
+            Args:
+                batch: the current validation batch that is used
+                batch_idx: the id of the batch
+        """
         if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
@@ -146,30 +171,23 @@ class TC_RNN_Module(pl.LightningModule):
         return {"loss": loss}
         
     def on_validation_end(self):
+        """
+            Defines what happens after validation is done for one epoch.
+        """
         if len(self.train_preds) > 0:
             compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
         if len(self.val_preds) > 0:
             compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
-        
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        if gpu_mode: x, y = x.cuda(), y.cuda()
-        
-        y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
-        if gpu_mode: y_hat = y_hat.cuda()  
-        if self.classification_loss:
-            y = y.long()
-        loss = self.criterion(y_hat, y)
-        # preds = torch.argmax(y_hat, dim=1)
-        # self.acc_train(preds, y)
-        # accuracy = self.acc_train.compute()
-        self.log("test_loss", loss, prog_bar=True, logger=True)
-        self.log("test_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        self.log("test_mae", mae(y_hat, y), prog_bar=True, logger=True)
-        
-        return {"loss": loss}
     
     def prepare_cfm_data(self, preds, y):
+        """
+            This method is used to convert predictions and labels to a representation
+            that can be turned into a confusion matrix.
+            
+            Args:
+                preds: the model predictions
+                y: the labels
+        """
         preds = torch.sum(preds.cpu(), dim=1)
         preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
         # print(preds)

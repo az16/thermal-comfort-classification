@@ -114,6 +114,14 @@ optional = ["Weight", "Height", "Bodyfat"]
 image_only = ["RGB_Frontal_View"]
 
 def narrow_labels(df, scale=2):
+        """
+        Reduces the 7 point ts scale to either 3 or 2 labels.
+
+
+        Args:
+            df: the label column of the dataframe
+            scale: the scale to reduce to
+        """
         #df = df[~df.Label==0]
         #print(df["Label"])
         if scale==2:
@@ -139,16 +147,20 @@ def narrow_labels(df, scale=2):
            
             # rescale = {-1: 0, -3:-1, -2:-1, 1:0, 2:1, 3:1}
             # df["Label"].replace(rescale, inplace=True)
-            print(np.sum((df["Label"]==-3))+np.sum((df["Label"]==-2)))
-            print(np.sum((df["Label"]==-1))+np.sum((df["Label"]==1))+np.sum((df["Label"]==0)))
-            print(np.sum((df["Label"]==2))+np.sum((df["Label"]==3)))
-            #df.loc[(df["Label"] == -1), "Label"] = 0
-            df.loc[(df["Label"] == -3), "Label"] = -1
-            df.loc[(df["Label"] == -2), "Label"] = -1
-            df.loc[(df["Label"] == 0), "Label"] = 0
-            #df.loc[(df["Label"] == 1), "Label"] = 0
-            df.loc[(df["Label"] == 2), "Label"] = 1
-            df.loc[(df["Label"] == 3), "Label"] = 1
+            df["Label"] = df["Label"] + noise(df["Label"], std=0.5, masked=True)
+            #print(np.sum((df["Label"]==-3))+np.sum((df["Label"]==-2)))
+            df.loc[((df["Label"] >= -0.5) & (df["Label"] <= 0.5)), "Label"] = 0
+            df.loc[(df["Label"] > 0.5), "Label"] = 1
+            df.loc[(df["Label"] < -0.5), "Label"] = -1
+            # print(np.sum((df["Label"]==-1))+np.sum((df["Label"]==1))+np.sum((df["Label"]==0)))
+            # print(np.sum((df["Label"]==2))+np.sum((df["Label"]==3)))
+            # #df.loc[(df["Label"] == -1), "Label"] = 0
+            # df.loc[(df["Label"] == -3), "Label"] = -1
+            # df.loc[(df["Label"] == -2), "Label"] = -1
+            # df.loc[(df["Label"] == 0), "Label"] = 0
+            # #df.loc[(df["Label"] == 1), "Label"] = 0
+            # df.loc[(df["Label"] == 2), "Label"] = 1
+            # df.loc[(df["Label"] == 3), "Label"] = 1
             print(np.sum((df["Label"]==-1)))
             print(np.sum((df["Label"]==0)))
             print(np.sum((df["Label"]==1)))
@@ -159,21 +171,50 @@ def narrow_labels(df, scale=2):
 
     
 def rgb_loader(paths):
+    """
+        Loads images given a list of paths.
+
+
+        Args:
+            paths: list of rgb paths
+    """
     #assert os.path.exists(file), "file not found: {}".format(root + file)
     return [np.asarray(Image.open(file).convert('RGB'), dtype=np.uint8) for file in paths]
 
 def one_hot(sample, classes=3):
+    """
+        Takes a categorical column and turns it into a one hot vector column.
+
+
+        Args:
+            sample: the categorical column
+            classes: the number of classes for oneh ot encoding
+    """
     r = np.zeros((sample.size, classes))
     r[np.arange(sample.shape[0]), sample] = 1
     return r
 
 def to_keypoint(sample):
+    """
+        Takes a key point column and turns it into a numpy vector of length 3 (x,y,z).
+
+
+        Args:
+            sample: the key point column
+    """
     sample = np.char.split(sample, sep="~")
     # r = np.array([x.split('~') for x in sample]).astype(np.float32)     
     # return r
     return sample
 
 def to_tensor(img):
+    """
+        Takes a pil image and turns it into a pytorch tensor.
+
+
+        Args:
+            img: the input pil image to transform.
+    """
     # if img.ndim == 4:
     #     img = torch.from_numpy(img.transpose((0, 3, 1, 2)).copy()) #return sequence of 3-channel torch tensors
     if img.ndim == 3:
@@ -184,8 +225,15 @@ def to_tensor(img):
     return img.float()
 
 def norm(sample, min=None, max=None):
-    # print(sample)
-    #print(min, max)
+    """
+        Does min-max normalization with customizable min and max limits.
+
+
+        Args:
+            sample: the data column
+            min: customizable minimum value in the column
+            max: customizable maximum value in the column
+    """
     if not min is None and max is None:
         max = np.max(sample)
     elif not max is None and min is None:
@@ -194,15 +242,27 @@ def norm(sample, min=None, max=None):
         min = np.min(sample)
         max = np.max(sample)
     return (sample - min)/(max-min) 
-    # x = np.array(sample.values) #returns a numpy array
-    # x_scaled = standardize(x)
-    # df = pd.DataFrame(x_scaled)
-    # return df
+    
 
 def standardize(sample):
+    """
+        Standardizes a data column using mean and std computations.
+
+
+        Args:
+            sample: the data column
+    """
     return (sample-np.mean(sample)/np.std(sample))
 
 def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
+    """
+        Outlier removal using the mean and std. Any value outside
+        3 stds is considered an outlier by this method
+
+
+        Args:
+            sample: the data column
+    """
     # q25, q75 = np.percentile(sample,[25, 75])
     # iqr = q75-q25 
     # cutoff = iqr * cutoff_multiplier
@@ -215,21 +275,29 @@ def clean(sample, missing_id=0, cutoff_multiplier = 1.5):
     return mask
 
 def no_answer_mask(frame, col=False):
+    """
+        Deletes "No Answer" values from the dataframe.
+
+
+        Args:
+            frame: the data frame
+            col: the column to delete values from
+    """
     if not col:
         return (frame != "No Answer")
-    
 
-def check_pmv_vars(columns):
-    required = ["PCE-Ambient-Temp", "Radiation-Temp", "Clothing-Level", "Ambient_Humidity"]
-    for col in required:
-        if not col in columns:
-            return False 
-    
-    return True
-
-# TODO: cite pythermal creators
+#This method uses the PyThermal package available at: https://github.com/CenterForTheBuiltEnvironment/pythermalcomfort
 def pmv(radiation, clothing, t_a, rh_a):
-    
+    """
+        Extracts necessary values for PMV computation and computes the PMV index.
+
+
+        Args:
+            radiation: the radiation temperature column
+            clothing: the clothing column
+            t_a: the ambient temperature column
+            rh_a: the relative humidity column
+    """
     #print(rh_a)
     # col_length = len(t_a)
     tdb = t_a.values 
@@ -251,10 +319,29 @@ def pmv(radiation, clothing, t_a, rh_a):
     return pmv
 
 def rotate(angle, imgs, reshape=False, prefilter=False, order=0):
+    """
+        Rotates and image given a rotation angle.
+
+
+        Args:
+            angle: how much to rotate in degrees
+            img: the image to rotate
+            reshape: should the image be reshaped?
+            prefilter: should a filter be applied before rotating?
+            order: which axis to start rotating from
+    """
     imgs = itpl.rotate(imgs, angle, reshape=reshape, prefilter=prefilter, order=order)
     return imgs
 
 def center_crop(img, output_size):
+    """
+        Extracts a central crop of an image given the desired crop size.
+
+
+        Args:
+            img: the img to crop
+            output_size: the desired crop size
+    """
     h = img.shape[1]
     w = img.shape[2]
     th, tw = output_size
@@ -263,10 +350,26 @@ def center_crop(img, output_size):
     return img[i:i+h, j:j+w, :]
 
 def horizontal_flip(img, do_flip):
+    """
+        Flips an img horizontally if flip is true.
+
+
+        Args:
+            img: the img tensor to flip
+            flip: bool that denotes whether to flip or not
+    """
     if do_flip: return np.fliplr(img[:,])
     else: return img 
 
 def augmentation(x, val=False):
+    """
+        Takes an img tensor and adds noise from a uniform distribution to the pixels.
+
+
+        Args:
+            x: the img tensor
+            val: is it a validation image?
+    """
     n, k = x 
     do_scale = np.random.uniform(0.0, 1.1) < 0.5
     s = None 
@@ -290,7 +393,13 @@ def augmentation(x, val=False):
     return (n+params_n, k+params_k)
 
 def make_mask(list_of_masks):
-    
+    """
+        Concatenates a list of bool tensors using and concatenation.
+
+
+        Args:
+            list_of_masks: the list of masks to be concatenated
+    """
     init = np.logical_and(list_of_masks[0], list_of_masks[1])
     if len(list_of_masks) > 2:
         for mask in list_of_masks:
@@ -299,10 +408,15 @@ def make_mask(list_of_masks):
     return init 
 
 def convert_str_nominal(x, column=False):
+    """
+        Turns Male/Female columns into 0/1 columns.
+
+
+        Args:
+            x: either a dataframe or gender column
+            column: is it a column or a dataframe?
+    """
     if column:
-        #col = x.values
-        #tmp = x == "Female"
-        
         return (x == "Female").astype(np.int8).astype(np.float64)
     i=0
     for key in ["Male", "Female"]:
@@ -310,27 +424,56 @@ def convert_str_nominal(x, column=False):
         i += 1
     return x
 
-def convert_binary(x):
-    
-    return (x == 1)
-
 def place_holder(x):
+    """
+        Function added as a skip value for preprocessing. Only returns what it's been given.
+
+
+        Args:
+            x: the data frame column
+    """
     return x
 
 def noise(df, mean = 0, std = 0.3, masked=False):
+    """
+        Adds noise from a gaussian distribution and adds it to a feature column (or labels).
+
+
+        Args:
+            df: the data frame column
+            mean: mean parameter for the gaussian noise to sample from
+            std: std parameter for the gaussian noise to sample from
+            masked: are we adding noise to labels?
+    """
     if not masked:
         return np.random.normal(mean, std, df)
     full = np.random.normal(mean, std, df.shape[0])
     tmp = np.array(df)
-    tmp = (-2 <= tmp)+(tmp<= 2)
+    tmp = ~((-2 >= tmp)+(tmp >= 2))
     full = full * tmp
     return full
 
 def make_full_path(root, df):
+    """
+        Constructs the full RGB path from the received csv paths.
+
+
+        Args:
+            root: path to directory where the RGB images are held
+            df: the dataframe
+    """
     df["RGB_Frontal_View"] = root + df['RGB_Frontal_View'].astype(str)
     return df
 
 def load_resized(out_size, df):
+    """
+        Loads images as resized images and applies interpolation.
+
+
+        Args:
+            out_size: the size to which images are supposed to be resized to
+            df: the dataframe column with all image paths
+    """
     df["RGB_Frontal_View"] = pd.Series(np.array([cv2.resize(cv2.imread(path), out_size, interpolation="INTER_NEAREST") for path in df["RGB_Frontal_View"]]))
     return df
 
@@ -341,7 +484,7 @@ operations = dict({
             "Height": norm,
             "Bodyfat": norm,
             "Bodytemp": norm,
-            "Sport-Last-Hour": convert_binary,
+            #"Sport-Last-Hour": convert_binary,
             "Time-Since-Meal": norm,
             "Tiredness": one_hot,
             "Radiation-Temp": norm,
@@ -402,6 +545,13 @@ params = dict({
 
 
 def emotion2Id(x):
+    """
+        Maps the emotion labels to numericals (0-6).
+
+
+        Args:
+            x: the emotion column
+    """
     i=0
     for key in ["Angry", "Fear", "Disgust", "Neutral", "Surprise", "Happy", "Sad"]:
         x.loc[(x["Emotion-ML"] == key), "Emotion-ML"] = i
@@ -409,9 +559,17 @@ def emotion2Id(x):
     return x
     
 def label2idx(label, scale=7):
+    """
+        Maps labels to their position in the label list depending on scale type.
+
+
+        Args:
+            label: the label column
+            scale: the scale type to be used (7,3,2)
+    """
     idx = [-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0]
     if scale == 2: idx = [0.0,1.0]
-    elif scale == 3: idx = [1.0,0.0,1.0]
+    elif scale == 3: idx = [-1.0,0.0,1.0]
     
     try:
         return np.array(float(idx.index(label)))
@@ -419,6 +577,15 @@ def label2idx(label, scale=7):
         return np.array(label)
 
 def order_representation(label, sklearn=False, scale=7):
+    """
+        Transforms labels to order representation after Cheng et al. (https://www.researchgate.net/publication/221533108_A_Neural_Network_Approach_to_Ordinal_Regression)
+
+
+        Args:
+            label: the label column
+            sklearn: are we using sklearn to train?
+            scale: the scale type to be used (7,3,2)
+    """
     if sklearn:
         return sk_order_representation(label)
     # print(label)
@@ -433,6 +600,14 @@ def order_representation(label, sklearn=False, scale=7):
         return category_vector
         
 def sk_order_representation(labels):
+    """
+        Transforms labels to order representation after Cheng et al. (https://www.researchgate.net/publication/221533108_A_Neural_Network_Approach_to_Ordinal_Regression).
+        Can only be used for sklearn-based training
+
+
+        Args:
+            label: the label column
+    """
     np_labels = labels.values
     #np_labels = labels
     #print(labels)
@@ -445,60 +620,52 @@ def sk_order_representation(labels):
     return r
 
 def remove_grouped_outliers(group, col, df):
-    # means = pickle.load(open("./sklearn_logs/pickles/{0}_means.p".format(col), "rb"))
-    # stds = pickle.load(open("./sklearn_logs/pickles/{0}_std.p".format(col),"rb"))
-    #print(os.listdir("./sklearn_logs/"))
+    """
+        Groups the specified column by label and does outlier removal per group based on mean and std parameters.
+        
+        Args:
+            group: variable to group by
+            col: column to do outlier removal on
+            df: the dataframe to take the grouped column from
+    """
     grouped_df = df.groupby(group)[col]
     labels = [label for label,g_p in grouped_df]
     means = grouped_df.mean().values
-    #print(df[col].mean(), df[col].std())
-    #print( grouped_df.min().values)
     stds = grouped_df.std().values
-    # print(means)
-    # print(stds)
     lower, upper = means-3*stds, means+3*stds
-    # print(lower)
-    # print(upper)
-    #print(labels)
     bound_index = 0
-    #print(lower, upper)
     for i in labels:
         c_label = i       
-        #print(c_label)
-        #print(df[(((df[col] > upper[bound_index]) | (df[col] < lower[bound_index])) & (df[group]==c_label))])
         df = df.drop(df[(((df[col] > upper[bound_index]) | (df[col] < lower[bound_index])) & (df[group]==c_label))].index)
         bound_index += 1
-        #df = df.loc[df[col] >= lower[i] and df["Label"]==c_label]
-    #print(df.shape)
     return df
 
 def get_change_rate(df, look_ahead_window=1000):
+    """
+        Computes gradients for sequential data using a look-ahead window
+
+
+        Args:
+            df: the dataframe to use
+            look-ahead-window: how many time steps to consider for computation
+    """
     df = df.values
     shifted = np.concatenate((df[look_ahead_window:], np.ones(look_ahead_window)*df[-1]))
     change_rate = shifted-df
     return change_rate
 
 def feature_permutations(features, max_size=5):
+    """
+        Creates all possible feature permutations based on basic combinatorics
+
+
+        Args:
+            features: the features to find combinations for
+            max_size: if only feature combinations up to a certain size are desired use this flag and set it the desired length
+    """
     pms = []
     for i in range(2,max_size+1):
         pms.extend(list(p(features, i)))
     pms = list(set([tuple(sorted(x)) for x in pms]))
     return pms
-
-def weight_func(x):
-        return 0.1*(x**2)+1.0
-       
-def weight_dict():
-    weights = {-3: weight_func(-3),
-                -2: weight_func(-2),
-                -1: weight_func(-1),
-                0: weight_func(0),
-                1: weight_func(1),
-                2: weight_func(2),
-                3: weight_func(3)}
-    return weights
         
-
-if __name__ == "__main__":
-    t = np.arange(1,8)
-    print(order_representation(t, sklearn=True))

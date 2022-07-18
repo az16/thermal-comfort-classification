@@ -13,7 +13,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime 
 from network.learning_models import Discretizer
-
+"""
+    This file includes all metric computations for model performance.
+"""
 
 class MetricLogger(object):
     def __init__(self, metrics, module, gpu):
@@ -95,6 +97,17 @@ class MAELoss(nn.Module):
 
 
 def compute_confusion_matrix(preds, labels, label_names, current_epoch, context, mode):
+    """
+        This method is used to create confusion matrices from predictions and labels.
+
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the labels
+            label_names (list): the label names
+            current_epoch (int): the current epoch
+            context (logger): the logger to which the confusion matrix should be added
+            mode (str): string that should denote whether this is a training or validation matrix
+    """
     #print(preds, labels)
     cfm = confusion_matrix(labels, preds, labels=label_names, normalize='true')
     #print(cfm)
@@ -112,6 +125,14 @@ def compute_confusion_matrix(preds, labels, label_names, current_epoch, context,
     context.logger.experiment.add_figure("Confusion Matrix {0}".format(mode), fig, current_epoch)
 
 def visualize_feature_importance(feature_imp, feature_names, i=None):
+    """
+        Used for random forest feature importance visualization.
+
+        Args:
+            feature_imp (dict): a dict of feature importances
+            feature_names (list): the feature names to be included
+            i (int, optional): The run id. Defaults to None.
+    """
     plt.rcParams["figure.figsize"] = [16,9]
     plt.rcParams.update({'font.size': 12})
     feature_imp = pd.Series(feature_imp, index=feature_names).sort_values(ascending=False)
@@ -130,24 +151,24 @@ def visualize_feature_importance(feature_imp, feature_names, i=None):
     plt.close(fig)
 
 def accuracy_score(preds, labels):
+    """
+        Computes the accuracy score for one epoch using pytorch metrics.
+        
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the actual labels
+    """
     return metrics.accuracy_score(labels,preds)
 
-def top_k_accuracy_score(preds, labels, k=2, normalize=True):
-    k_l = k-1
-    total = len(labels)
-    correct = 0
-    i = 0
-    for l in labels:
-        y_hat = preds[i]
-        if l in [x for x in range(y_hat-k_l,y_hat+k+1)]:
-            #print(l,y_hat)
-            correct += 1
-    
-    if normalize:
-        return correct/total 
-    return correct
-
 def mean_accuracy(preds, labels):
+    """
+        Computes the mean accuracy over one epoch.
+
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the actual labels
+
+    """
     n = len(preds)
     correct = 0
     for i in range(n):
@@ -157,6 +178,14 @@ def mean_accuracy(preds, labels):
     return correct/n
 
 def mean_absolute_error(preds, labels):
+    """
+        Computes the mean absolute error over one epoch.
+
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the actual labels
+
+    """
     n = len(preds)
     distance = 0
     labels = labels.values
@@ -167,12 +196,28 @@ def mean_absolute_error(preds, labels):
         
 
 def rmse(preds, targets):
+    """
+        Computes the root mean squared error over one epoch.
+
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the actual labels
+
+    """
     B = 1
     try: B = preds.shape[0]
     except: pass
     return torch.sqrt(torch.sum(torch.pow(targets-preds, 2))*(1/B))
 
 def mae(preds, targets):
+    """
+        Computes the mean absolute error over one epoch.
+
+        Args:
+            preds (tensor): the model predictions
+            labels (tensor): the actual labels
+
+    """
     B = 1
     try: B = preds.shape[0]
     except: pass

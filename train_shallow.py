@@ -21,6 +21,15 @@ from tqdm import tqdm
 
 
 def clf_tree(x,y,label_names, name):
+    """
+        Creates a confusion matrix given model predictions, labels, label names and file name
+
+        Args:
+            x (nparray): the model predictions
+            y (nparray): the actual labels
+            label_names (list): the label names (for axis creation)
+            name (str): the file name to save the img of the confusion matrix
+    """
     #print(preds, labels)
     cfm = confusion_matrix(y, x, labels=label_names, normalize='true')
     #print(cfm)
@@ -37,18 +46,20 @@ def clf_tree(x,y,label_names, name):
     fig.savefig("sklearn_logs/media/{0}.png".format(name))
     plt.close(fig)
 
-def get_random_prediciton_input(x, y, samples = 100):
-    prediction_input = []
-    correct_label = []
-    r,c = x.shape[0], x.shape[1]
-    for i in range(samples):
-        idx = randint(0,r)
-        prediction_input.append(x[idx:idx+1])
-        correct_label.append(y[idx:idx+1])
-    
-    return prediction_input, correct_label
-
 def cross_validate_local(x_splits_train, y_splits_train, x_splits_val, y_splits_val, feature_names=[]):
+    """
+        This method uses a cross validation scheme that uses dataframe permutation by participant rather than
+        by csv line count. 
+        
+        Example: Particpant files 1-15 in training and 16-20 in validation rather than lines 1-1500000 in trainging and rest in validation
+
+        Args:
+            x_splits_train (list): the training splits for every fold
+            y_splits_train (list): the training labels for every fold
+            x_splits_val (list): the validation split for every fold
+            y_splits_val (list): the validation labels for every fold
+            feature_names (list, optional): If only certain features are supposed to be tested put them here. Defaults to [].
+    """
     model = RandomForest(cv=False)
     val_scores = []
     importance_imp = []
@@ -65,7 +76,7 @@ def cross_validate_local(x_splits_train, y_splits_train, x_splits_val, y_splits_
         preds_val = model.predict(x_v)
       
         #print("Validation top_2_accuracy: {0}".format(top_k_accuracy_score(y_v, preds_val, k=2)))
-        clf_tree(preds_val, y_v, [-3, -2, -1, 0, 1, 2, 3], "test classifier {0}".format(i))
+        clf_tree(preds_val, y_v, [0, 1], "test classifier {0}".format(i))
         #print("Train accuracy: {0}".format(accuracy_score(preds_train,y_t)))
         #print("Validation top_1_accuracy: {0}".format(accuracy_score(preds_val, y_v)))
         feature_importance_imp = model.feature_importances()
@@ -84,6 +95,14 @@ def cross_validate_local(x_splits_train, y_splits_train, x_splits_val, y_splits_
     visualize_feature_importance(np.mean(np.array(importance_perm), axis=0), feature_names, i="permutation_based")
     
 def feature_selection(in_features, test=None):
+    """
+        Tests different features combinations of varying length for prediction performance on an unoptimzed
+        random forest model.
+
+        Args:
+            in_features (list): _description_
+            test (bool, optional): debugging flag to get more prints. Defaults to None.
+    """
     performances = []
     feature_log = []
     permutations = [list(x) for x in tqdm(feature_permutations(in_features, max_size=len(in_features)))]
@@ -109,6 +128,9 @@ def feature_selection(in_features, test=None):
     print("Best feature combination: {0}".format(feature_log[max_index]))
 
 def sk_feature_selection():
+    """
+        Does feature selection using only sklearn models and functions.
+    """
     dataset = TC_Dataloader(full=True)
     x, y = dataset.splits()
     model = RandomForest(cv=False)
@@ -121,16 +143,30 @@ def sk_feature_selection():
     print(x_new)    
 
 def grid_search(param_grid):
+    """
+        This method performs grid search with a fixed set of features and tests different model
+        params.
+
+        Args:
+            param_grid (dict): the parameter dict that defines the parameter ranges to test during grid search.
+    """
     dataset = TC_Dataloader(full=True)
-    x,y = dataset.splits(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp', 'Sport-Last-Hour'])
+    x,y = dataset.splits(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'])
     model = RandomForest(cv=True)
     clf = model.rf
-    gs = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10, verbose=5)
+    gs = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5, verbose=5)
     gs.fit(x,y)
     print("Best parameters: {0}".format(gs.best_params_))
     print("Best score: {0}".format(gs.best_score_))
 
 def downsampling_selection(param_grid, limit=30):
+    """
+        Tests different downsampling rates and finds the optimum.
+
+        Args:
+            param_grid (_type_): the random forest parameter dict
+            limit (int, optional): up to which sampling rate the method is meant to test. Defaults to 30.
+    """
     dataset = TC_Dataloader(full=True)
     mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp']
     x, y = dataset.splits(mask=mask)
@@ -159,7 +195,14 @@ def downsampling_selection(param_grid, limit=30):
     print("Best performance: {0}".format(max))
     print("Best sampling rate: {0}".format(best_sampling_rate))
     
-def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp', 'Sport-Last-Hour']):
+def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp']):
+    """
+        Given a set of input features this method loads the necessary training data and fits a random forest classifier.
+    
+
+        Args:
+            mask (list, optional): the features to used. Defaults to ['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'].
+    """
     model = RandomForest(cv=False)#RandomForest(cv=False)
     dataset = TC_Dataloader(full=True) 
     X, Y = dataset.splits(mask=mask)
@@ -169,10 +212,10 @@ def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiatio
     #print(val_Y)
     #roc = roc_auc_score(val_Y, model.rf.predict_proba(val_X), multi_class='ovr')
     #print("ROC score: {0}".format(roc))
-    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)#model.predict(val_X)
+    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
     #print(len(val_preds))
     #print(val_preds)
-    clf_tree(val_preds, Y, [0,1], "Test_2_Point")
+    clf_tree(val_preds, Y, [0,1], "Test_x_Point")
     print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, Y)))
     # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
     # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
@@ -186,6 +229,9 @@ def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiatio
     #print("MAE for validation: {0}".format(mean_absolute_error(val_preds, val_Y)))
 
 def sk_cross_validate():
+    """
+        Does cross validation using the sklearn methods instead of self-implemented ones
+    """
     model = RandomForest(cv=False)
     dataset = TC_Dataloader(full=True)
     x, y = dataset.splits()
@@ -212,13 +258,13 @@ if __name__ == "__main__":
                     "Ambient_Temperature"]
     
     params_grid = {
-                'n_estimators': [50, 100, 200,300,400],
-                'max_depth': [8,16,24],
+                'n_estimators': [100,200,300,400],
+                'max_depth': [6,8],
                 'min_samples_split':[3],
                 'min_samples_leaf':[2],
                 'max_leaf_nodes': [None],
-                'max_samples':[100,200,300,400,500],
-                'random_state': [2]
+                'max_samples':[400,425,450,475,500],
+                'random_state': [0]
                 #'max_features': ['auto']}
                 #'class_weight': [None, 'balanced'],
                 #'criterion': ['gini', 'entropy'],
@@ -247,27 +293,5 @@ if __name__ == "__main__":
     #cross_validate_local(x_t, y_t, x_v, y_v, feature_names=dataset.independent)
     #sk_cross_validate()
     
-     
-    # r_i, r_l = get_random_prediciton_input(x_test, y_test)
-    
-    # print("Testing on random inputs from dataset..")
-    # #print("Random Testing Result Mapping: (y_hat, y)")
-    # test_lines = ["i;y_hat;y;correct\n"]
-    # test_preds, test_labels = [], []
-    # correct = ""
-    # for i in range(0,len(r_i)):
-    #     correct = "FALSE"
-    #     tmp_i, tmp_l = r_i[i], label_mapping[r_l[i].values[0]]
-    #     pred_num = model.predict(tmp_i)[0]
-    #     pred = label_mapping[pred_num]
-    #     if pred == tmp_l:
-    #         correct = "TRUE"
-    #     test_lines.append(";".join([tmp_i.to_string(header=None), pred, tmp_l, correct])+"\n")
-    #     test_preds.append(pred_num)
-    #     test_labels.append(r_l[i].values[0])
-    # with open('D:/thermal-comfort-classification/sklearn_logs/test_results.csv', 'w') as fp:
-    #     for item in test_lines:
-    #         fp.write(item)
-    # print("Mean test accuracy: {0}, mean absolute error: {1}".format(mean_accuracy(test_preds, test_labels), mean_absolute_error(test_preds, test_labels)))
     
     
