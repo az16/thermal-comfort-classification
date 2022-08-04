@@ -6,16 +6,16 @@ from sklearn.model_selection import GridSearchCV, cross_val_predict, train_test_
 from dataloaders.path import Path
 from sklearn.pipeline import make_pipeline
 from argparse import ArgumentParser
-from network.learning_models import RandomForest, RandomForestRegressor
+from network.learning_models import RandomForest
 from dataloaders.sklearn_dataloader import TC_Dataloader
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, RocCurveDisplay
 import pandas as pd
 import numpy as np
-from metrics import top_k_accuracy_score, visualize_feature_importance, accuracy_score, mean_absolute_error, mean_accuracy
+from metrics import visualize_feature_importance, accuracy_score, mean_absolute_error, mean_accuracy
 from random import randint
-from dataloaders.utils import feature_permutations, weight_dict
+from dataloaders.utils import feature_permutations
 from sklearn.inspection import permutation_importance
 from tqdm import tqdm
 
@@ -204,25 +204,26 @@ def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiatio
             mask (list, optional): the features to used. Defaults to ['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'].
     """
     model = RandomForest(cv=False)#RandomForest(cv=False)
-    dataset = TC_Dataloader(full=True) 
-    X, Y = dataset.splits(mask=mask)
+    dataset = TC_Dataloader(by_file=True) 
+    train_X, train_Y, val_X, val_Y, _, _ = dataset.splits()
     #print(X.shape)
-    print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
-    #model.fit(X,Y)
+    #print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
+    model.fit(train_X,train_Y)
+    #preds = model.predict(val_X)
     #print(val_Y)
     #roc = roc_auc_score(val_Y, model.rf.predict_proba(val_X), multi_class='ovr')
     #print("ROC score: {0}".format(roc))
-    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
+    #val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
     #print(len(val_preds))
     #print(val_preds)
-    clf_tree(val_preds, Y, [0,1], "Test_x_Point")
-    print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, Y)))
+    #clf_tree(val_preds, Y, [0,1], "Test_x_Point")
+    #print("Top 0 accuracy: {0}".format(accuracy_score(preds, val_Y)))
     # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
     # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
-    # feature_importance_imp = model.feature_importances()
-    # feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
-    # visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
-    # visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
+    feature_importance_imp = model.feature_importances()
+    feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
+    visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
+    visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
     # RocCurveDisplay.from_estimator(model.rf, val_X, val_Y)
     # plt.show()
     #print(classification_report(val_Y, val_preds))
