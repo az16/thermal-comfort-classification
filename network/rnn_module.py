@@ -1,6 +1,6 @@
 from multiprocessing import cpu_count
 from metrics import Accuracy
-from metrics import rmse, mae, compute_confusion_matrix
+from metrics import WeightedCrossEntropyLoss
 import numpy as np 
 import torch
 import pytorch_lightning as pl
@@ -16,17 +16,17 @@ class TC_RNN_Module(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.opt = opt
+
+        num_features = len(self.opt.columns)-1 #-1 to neglect labels
+        num_categories = self.opt.scale #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
                 
-        self.criterion = torch.nn.CrossEntropyLoss()
-        #self.criterion = torch.nn.MSELoss()
+        self.criterion = WeightedCrossEntropyLoss(num_categories, self.opt.use_weighted_loss)
         self.accuracy = Accuracy()
         self.train_preds = []
         self.train_labels = []
         self.val_preds = []
         self.val_labels = []
         
-        num_features = len(self.opt.columns)-1 #-1 to neglect labels
-        num_categories = self.opt.scale #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout)
 
         

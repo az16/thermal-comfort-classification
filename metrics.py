@@ -1,18 +1,17 @@
 from sklearn import metrics
 import torch 
 import torch.nn as nn
-# import pytorch_lightning as pl
 import seaborn as sns
 import matplotlib.pyplot as plt
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import confusion_matrix
 import torchmetrics.functional as plf
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import datetime 
 from network.learning_models import Discretizer
+import torch.nn.functional as F
 """
     This file includes all metric computations for model performance.
 """
@@ -56,24 +55,6 @@ class MetricLogger(object):
 
     def reset(self):
         self.computer.reset()
-
-class MetricComputation(object):
-    def __init__(self, metrics, gpu):
-        self.names = metrics
-        self.metrics = [METRICS[m] for m in metrics]
-        if gpu: self.metrics = [m.cuda() for m in self.metrics]
-        self.reset()
-
-    def reset(self):
-        [metric.reset() for metric in self.metrics]
-
-    def compute(self, pred, target):
-        current_values = [metric(pred, target) for metric in self.metrics]
-        return current_values
-
-    def avg(self, metric):
-        if isinstance(metric, str): return self.metrics[self.names.index(metric)].compute()
-        assert False, "metric must be str"
 
 class MAELoss(nn.Module):
     def __init__(self, reduction="mean") -> None:
@@ -224,6 +205,18 @@ def mae(preds, targets):
     tmp = torch.abs(targets-preds)
     return torch.sum(tmp)*(1/B)
 
+class WeightedCrossEntropyLoss(torch.nn.Module):
+    def __init__(self, num_classes, use_weights=True):
+        super(WeightedCrossEntropyLoss, self).__init__()
+        self.use_weights = use_weights
+        self.num_classes = num_classes
+
+    def forward(self, pred, target):
+        weight = None
+        if self.use_weights:
+            counts = torch.bincount(target.view(-1).int(), minlength=self.num_classes)
+            weight = 1.0 / counts
+        return F.cross_entropy(pred, target, weight=weight)
 
 class Accuracy(nn.Module):
     def __init__(self):

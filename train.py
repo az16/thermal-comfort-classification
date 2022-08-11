@@ -39,6 +39,7 @@ if __name__ == "__main__":
     parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
     parser.add_argument('--layers', type=int, default=2, help='Hidden layers')
     parser.add_argument('--preprocess', action='store_true', help='Make dataloaders perform data cleaning and normalization')
+    parser.add_argument('--use_weighted_loss', action='store_true', help='Use weighted cross entropy loss.')
     parser.add_argument('--data_augmentation', action='store_true', help='Do data augmentation on csv features.')
     parser.add_argument('--skiprows', type=int, default=26, help='How many rows to skip while reading data lines')
     parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
