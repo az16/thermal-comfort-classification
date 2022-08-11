@@ -17,8 +17,8 @@ class TC_RNN_Module(pl.LightningModule):
         self.save_hyperparameters()
         self.opt = opt
                 
-        #self.criterion = torch.nn.CrossEntropyLoss()
-        self.criterion = torch.nn.MSELoss()
+        self.criterion = torch.nn.CrossEntropyLoss()
+        #self.criterion = torch.nn.MSELoss()
         self.accuracy = Accuracy()
         self.train_preds = []
         self.train_labels = []

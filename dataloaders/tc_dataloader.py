@@ -381,7 +381,7 @@ class TC_Dataloader(BaseDataset):
 
             if not self.use_col_as_label:
                 label = label2idx(label, scale = self.scale)
-                label = order_representation(label, scale=self.scale)
+                #label = order_representation(label, scale=self.scale)            
                 label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
@@ -391,7 +391,7 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
          
-        return out.float(), label.float()#.type(torch.LongTensor)
+        return out.float(), label.long()#.type(torch.LongTensor)
     
     
     def __len__(self):
@@ -408,3 +408,8 @@ class TC_Dataloader(BaseDataset):
     
     
 
+if __name__ == '__main__':
+    dataset = TC_Dataloader(root="H:/data/ThermalDataset", split="test", cols=[11, 31, 32, 33], use_sequence=True)
+    for d in dataset:
+        print(d)
+        break
