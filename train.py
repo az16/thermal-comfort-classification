@@ -1,12 +1,12 @@
 import sys
 import random
 import torch
-from dataloaders.path import Path
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
 from network.regression_module import TC_MLP_Module
 from network.rcnn_module import TC_RCNN_Module
+from dataloaders.tc_dataloader import TC_Dataloader
 
 """
     In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called
@@ -29,12 +29,13 @@ if __name__ == "__main__":
     parser.add_argument('--find_learning_rate', action='store_true', help="Finding learning rate.")
     parser.add_argument('--detect_anomaly', action='store_true', help='Enables pytorch anomaly detection')
 
+    parser.add_argument('--name', default=None, help="Name of the train run")
+    parser.add_argument('--dataset_path', required=True, help="Path to ThermalDataset")
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--learning_rate_decay', type=float, default=0.99999, help='Learning rate')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
-    parser.add_argument('--module', default='', help='The network module to be used for training')
-    parser.add_argument('--version', default='', help='Log directory name.')
-    parser.add_argument('--columns', default=[], help='The number of variables used for training')
+    parser.add_argument('--columns', default=[11, 31, 32, 33], nargs='+', help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
     parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
@@ -63,16 +64,22 @@ if __name__ == "__main__":
     if args.seed is None: # Generate random seed if none is given
         args.seed = random.randrange(4294967295) # Make sure it's logged
     pl.seed_everything(args.seed)
+
+    callbacks = []
+
+    if args.name:
+        callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
     
-    # Checkpoint callback to save best model parameters
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        verbose=True,
-        save_top_k=1,
-        dirpath="./checkpoints/{0}".format(args.module),
-        filename='best-performance',
-        monitor='val_loss',
-        mode='min'
-    )
+        # Checkpoint callback to save best model parameters
+        callbacks += [pl.callbacks.ModelCheckpoint(
+            verbose=True,
+            save_top_k=1,
+            filename='{epoch}-{val_acc}',
+            monitor='val_acc',
+            mode='max'
+        )]
+
+
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
@@ -80,19 +87,16 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer(
         fast_dev_run=args.dev,
-        profiler="simple",
         gpus=args.gpus,
         overfit_batches=1 if args.overfit else 0,
         precision=args.precision if use_gpu else 32,
-        amp_level='O2' if use_gpu else None,
-        amp_backend='apex',
+        #amp_level='O2' if use_gpu else None,
+        #amp_backend='apex',
         enable_model_summary=True,
         min_epochs=args.min_epochs,
-        # limit_train_batches=0.001,
-        # limit_val_batches=0.001,
         max_epochs=args.max_epochs,
-        logger=pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module, version=args.version),
-        callbacks=[pl.callbacks.lr_monitor.LearningRateMonitor(), checkpoint_callback]
+        logger=pl.loggers.WandbLogger(project="ThermalComfort", name=args.name) if args.name else None,
+        callbacks=callbacks
     )
 
     yaml = args.__dict__
@@ -107,22 +111,21 @@ if __name__ == "__main__":
     if args.preprocess: preprocessing = True
     if args.data_augmentation: augmentation = True
     # choose module with respective network architecture here based on parser argument
-    assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
-    tc_module = None 
-    if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, preprocessing, augmentation)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale)
-    elif args.module == "rcnn": tc_module = TC_RCNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path, preprocessing, augmentation, args.skiprows, scale=args.scale) 
-    print(args)
-    print("Using {0} lightning module.".format(args.module.upper()))
-    #print(tc_module)
-    if args.find_learning_rate:
-        # Run learning rate finder
-        lr_finder = trainer.tuner.lr_find(tc_module)
-        suggested_lr = lr_finder.suggestion()
-        print("Old learning rate: ", args.learning_rate)
-        args.learning_rate = suggested_lr
-        print("Suggested learning rate: ", args.learning_rate)
-    else:
-        #train and test afterwards (uncomment testing if not enough data is available)
-        trainer.fit(tc_module)
-        #trainer.test(tc_module, verbose=True)
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=preprocessing, use_sequence=sequence_based, data_augmentation=augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+                                                    batch_size=args.batch_size, 
+                                                    shuffle=True, 
+                                                    num_workers=args.worker, 
+                                                    pin_memory=True)
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=preprocessing, use_sequence=sequence_based, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+                                                batch_size=1, 
+                                                shuffle=False, 
+                                                num_workers=args.worker, 
+                                                pin_memory=True)     
+    
+    #if args.module == "regression": tc_module = TC_MLP_Module(args)
+    #elif args.module == "rnn": tc_module = TC_RNN_Module(args)
+    #elif args.module == "rcnn": tc_module = TC_RCNN_Module(args)
+    #else: raise NotImplementedError()
+    tc_module = TC_RNN_Module(args)
+    
+    trainer.fit(model=tc_module, train_dataloaders=train_loader, val_dataloaders=val_loader)

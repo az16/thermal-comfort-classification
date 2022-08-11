@@ -1,6 +1,6 @@
 from sklearn.feature_extraction import img_to_graph
 from dataloaders.dataset import *
-from dataloaders.path import Path
+from pathlib import Path
 from tqdm import tqdm
 from dataloaders.utils import *
 from PIL import Image
@@ -43,7 +43,7 @@ class TC_Dataloader(BaseDataset):
     """
     def __init__(self, root, split, scale=7, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
         self.split = split 
-        self.root = root 
+        self.root = Path(root) 
         self.forecasting = forecasting
         self.scale = scale
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
@@ -96,14 +96,14 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names =  [] #os.listdir(Path.db_root_dir("tcs"))
+        file_names =  [] #os.listdir(self.root)
         with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
             lines = file.readlines()
             file_names = [line.rstrip() for line in lines]
-        assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
+        assert len(file_names) > 0; "No files found at {0}".format(self.root)
             
-        file_names = [Path.db_root_dir("tcs")+x for x in file_names]
-        print("Found {0} {1} files at {2}".format(len(file_names),self.split,Path.db_root_dir("tcs")))
+        file_names = [self.root/x for x in file_names]
+        print("Found {0} {1} files at {2}".format(len(file_names),self.split,self.root))
         
         # train_limit = int(len(file_names)*0.6)
         # val_size = int((len(file_names)-train_limit)*0.5)
@@ -171,7 +171,7 @@ class TC_Dataloader(BaseDataset):
                 for key in grouped_removal:
                     if key in self.columns:  
                         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
-                    
+            print(self.df)
             print(np.sum((self.df["Label"]==-1)))
             print(np.sum((self.df["Label"]==0)))
             print(np.sum((self.df["Label"]==1)))
