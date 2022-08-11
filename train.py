@@ -18,16 +18,14 @@ if __name__ == "__main__":
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
     parser.add_argument('--seed', default=None, type=int, help='Random Seed')
-    parser.add_argument('--precision', default=16,   type=int, help='16 to use Mixed precision (AMP O2), 32 for standard 32 bit float training')
-    parser.add_argument('--gpus', type=int, default=1, help='Number of GPUs')
+    parser.add_argument('--precision', default=32,   type=int, help='16 to use Mixed precision (AMP O2), 32 for standard 32 bit float training')
+    parser.add_argument('--gpus', type=int, default=-1, help='Number of GPUs')
     parser.add_argument('--dev', action='store_true', help='Activate Lightning Fast Dev Run for debugging')
     parser.add_argument('--overfit', action='store_true', help='If this flag is set the network is overfit to 1 batch')
     parser.add_argument('--min_epochs', default=1, type=int, help='Minimum number of epochs.')
-    parser.add_argument('--max_epochs', default=1, type=int, help='Maximum number ob epochs to train')
+    parser.add_argument('--max_epochs', default=50, type=int, help='Maximum number ob epochs to train')
     parser.add_argument('--metrics', default=['accuracy'], nargs='+', help='which metrics to evaluate')
     parser.add_argument('--worker', default=6, type=int, help='Number of workers for data loader')
-    parser.add_argument('--find_learning_rate', action='store_true', help="Finding learning rate.")
-    parser.add_argument('--detect_anomaly', action='store_true', help='Enables pytorch anomaly detection')
 
     parser.add_argument('--name', default=None, help="Name of the train run")
     parser.add_argument('--dataset_path', required=True, help="Path to ThermalDataset")
@@ -47,14 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     
     
-
-
-
     args = parser.parse_args()
-
-    if args.detect_anomaly: # for debugging
-        print("Enabling anomaly detection")
-        torch.autograd.set_detect_anomaly(True)
 
     # windows safe
     if sys.platform in ["win32"]:
@@ -110,7 +101,7 @@ if __name__ == "__main__":
     augmentation = False
     if args.preprocess: preprocessing = True
     if args.data_augmentation: augmentation = True
-    # choose module with respective network architecture here based on parser argument
+
     train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=preprocessing, use_sequence=sequence_based, data_augmentation=augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
@@ -122,10 +113,6 @@ if __name__ == "__main__":
                                                 num_workers=args.worker, 
                                                 pin_memory=True)     
     
-    #if args.module == "regression": tc_module = TC_MLP_Module(args)
-    #elif args.module == "rnn": tc_module = TC_RNN_Module(args)
-    #elif args.module == "rcnn": tc_module = TC_RCNN_Module(args)
-    #else: raise NotImplementedError()
-    tc_module = TC_RNN_Module(args)
+    model = TC_RNN_Module(args)
     
-    trainer.fit(model=tc_module, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
