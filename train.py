@@ -84,8 +84,6 @@ if __name__ == "__main__":
         gpus=args.gpus,
         overfit_batches=1 if args.overfit else 0,
         precision=args.precision if use_gpu else 32,
-        #amp_level='O2' if use_gpu else None,
-        #amp_backend='apex',
         enable_model_summary=True,
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
@@ -100,17 +98,13 @@ if __name__ == "__main__":
             'gpu_capability': torch.cuda.get_device_capability(0) if use_gpu else None
             })
     
-    preprocessing = False
-    augmentation = False
-    if args.preprocess: preprocessing = True
-    if args.data_augmentation: augmentation = True
 
-    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=preprocessing, use_sequence=sequence_based, data_augmentation=augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=preprocessing, use_sequence=sequence_based, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 
