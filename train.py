@@ -24,7 +24,6 @@ if __name__ == "__main__":
     parser.add_argument('--overfit', action='store_true', help='If this flag is set the network is overfit to 1 batch')
     parser.add_argument('--min_epochs', default=1, type=int, help='Minimum number of epochs.')
     parser.add_argument('--max_epochs', default=50, type=int, help='Maximum number ob epochs to train')
-    parser.add_argument('--metrics', default=['accuracy'], nargs='+', help='which metrics to evaluate')
     parser.add_argument('--worker', default=6, type=int, help='Number of workers for data loader')
 
     parser.add_argument('--name', default=None, help="Name of the train run")
@@ -104,7 +103,7 @@ if __name__ == "__main__":
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 

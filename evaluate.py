@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--dataset_path', required=True, help="Path to ThermalDataset")
     parser.add_argument('--ckpt',  type=str, required=True, help='Ckpt to evaluate.')
-    parser.add_argument('--preprocess', action='store_true', help='Make dataloaders perform data cleaning and normalization')
     
     
     args = parser.parse_args()
@@ -40,7 +39,7 @@ if __name__ == "__main__":
 
     model = TC_RNN_Module.load_from_checkpoint(args.ckpt)
 
-    test_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="test", preprocess=args.preprocess, use_sequence=model.opt.sequence_window>0, data_augmentation=False, sequence_size=model.opt.sequence_window, cols=model.opt.columns, downsample=model.opt.skiprows, forecasting=model.opt.forecasting, scale=model.opt.scale),
+    test_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="test", preprocess=True, use_sequence=model.opt.sequence_window>0, data_augmentation=False, sequence_size=model.opt.sequence_window, cols=model.opt.columns, downsample=model.opt.skiprows, forecasting=model.opt.forecasting, scale=model.opt.scale),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=args.worker, 
