@@ -391,7 +391,7 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
          
-        return out, label#.type(torch.LongTensor)
+        return out.float(), label.float()#.type(torch.LongTensor)
     
     
     def __len__(self):
