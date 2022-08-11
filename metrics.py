@@ -223,7 +223,7 @@ class Accuracy(nn.Module):
         super().__init__()
     
     def forward(self, y_hat, y):
-        current_correct = torch.sum(torch.argmax(y_hat, dim=1) == y).item()
+        current_correct = torch.sum(torch.argmax(y_hat.softmax(), dim=1) == y).item()
         current_total = y_hat.shape[0]
         return current_correct/current_total
     
