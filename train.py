@@ -67,8 +67,8 @@ if __name__ == "__main__":
         callbacks += [pl.callbacks.ModelCheckpoint(
             verbose=True,
             save_top_k=1,
-            filename='{epoch}-{val_acc}',
-            monitor='val_acc',
+            filename='{epoch}-{valid_acc}',
+            monitor='valid_acc',
             mode='max'
         )]
 
