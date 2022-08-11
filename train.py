@@ -58,6 +58,8 @@ if __name__ == "__main__":
 
     callbacks = []
 
+    if args.dev: args.name = None
+
     if args.name:
         callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
     
