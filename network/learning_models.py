@@ -47,27 +47,30 @@ class RNN(nn.Module):
         LSTM classifier without activation layer
         """
         self.n_layers = n_layers
-        self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True)
+        self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.dp_layer = nn.Dropout(dropout)
-        if n_layers > 1:
-            self.lstm = self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
-        self.fc2 = nn.Linear(hidden_dim//2, num_classes)
-        self.activation = nn.Sigmoid()
+        mlp_feat = 64
+        self.fc1 = nn.Sequential(
+            nn.Linear(hidden_dim, mlp_feat),
+            nn.BatchNorm1d(mlp_feat),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_feat, mlp_feat * 2),
+            nn.BatchNorm1d(mlp_feat * 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_feat * 2, mlp_feat * 4)
+        )
+        self.fc2 = nn.Linear(mlp_feat * 4, num_classes)
         
     def forward(self, x):
-        #print(x.shape)
-        self.lstm.flatten_parameters() #use multi GPU capabilities
+        self.lstm.flatten_parameters()
         _, (h_t, _) = self.lstm(x)
         x = h_t[-1]
-        if self.n_layers == 1:
-            x = self.dp_layer(x)
         x = self.fc1(x)
-        x = self.dp_layer(x)
         x = self.fc2(x)
-        x = self.activation(x)
       
-        return x #x.float()
+        return x
     
 
 class Discretizer(nn.Module):
