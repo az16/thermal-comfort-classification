@@ -45,6 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
+    parser.add_argument('--latent_size', default=64, type=int, help='Latent vector size.')
     
     
     args = parser.parse_args()

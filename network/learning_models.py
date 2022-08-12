@@ -41,24 +41,24 @@ class MLP(nn.Module):
         return torch.squeeze(x, dim=1)
 
 class RNN(nn.Module):
-    def __init__(self, num_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2, mlp_feat=64):
+    def __init__(self, num_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2, latent_size=64):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
         self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc1 = nn.Sequential(
-            nn.Linear(hidden_dim, mlp_feat),
-            nn.BatchNorm1d(mlp_feat),
+            nn.Linear(hidden_dim, latent_size),
+            nn.BatchNorm1d(latent_size),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(mlp_feat, mlp_feat * 2),
-            nn.BatchNorm1d(mlp_feat * 2),
+            nn.Linear(latent_size, latent_size * 2),
+            nn.BatchNorm1d(latent_size * 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(mlp_feat * 2, mlp_feat * 4)
+            nn.Linear(latent_size * 2, latent_size * 4)
         )
-        self.fc2 = nn.Linear(mlp_feat * 4, num_classes)
+        self.fc2 = nn.Linear(latent_size * 4, num_classes)
         
     def forward(self, x):
         self.lstm.flatten_parameters()
