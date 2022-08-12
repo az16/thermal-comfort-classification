@@ -7,6 +7,7 @@ from network.rnn_module import TC_RNN_Module
 from network.regression_module import TC_MLP_Module
 from network.rcnn_module import TC_RCNN_Module
 from dataloaders.tc_dataloader import TC_Dataloader
+from dataloaders.utils import Feature, SCALARS
 
 """
     In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called
@@ -61,6 +62,8 @@ if __name__ == "__main__":
 
     if args.dev: args.name = None
     if args.loss == 'mse': args.use_weighted_loss = False
+    if Feature.ALL.value in args.columns:
+        args.columns = SCALARS + [Feature.LABEL]
 
     if args.name:
         callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
