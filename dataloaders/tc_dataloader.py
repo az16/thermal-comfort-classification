@@ -58,7 +58,10 @@ class TC_Dataloader(BaseDataset):
        #self.use_pmv = use_pmv
         self.use_sequence = use_sequence
         self.sequence_size = sequence_size 
-        self.columns = [header[x] for x in cols]
+        if Feature.ALL in cols or Feature.ALL.value in cols:
+            self.columns = SCALARS + [Feature.LABEL.value]
+        else:
+            self.columns = [Feature(x).value for x in cols] #[header[x] for x in cols]
         if self.use_imgs and "RGB_Frontal_View" not in self.columns: self.columns.insert(-2, "RGB_Frontal_View")
         if self.use_col_as_label and "Label" in self.columns: self.columns.pop(-1); self.columns.append(self.col_label)
         self.continuous_labels = continuous_labels
@@ -409,7 +412,7 @@ class TC_Dataloader(BaseDataset):
     
 
 if __name__ == '__main__':
-    dataset = TC_Dataloader(root="H:/data/ThermalDataset", split="test", cols=[11, 31, 32, 33], use_sequence=True)
+    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="test", cols=[Feature.ALL], use_sequence=True)
     for d in dataset:
         print(d)
         break

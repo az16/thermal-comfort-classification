@@ -11,6 +11,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 import os 
+from enum import Enum
 
 
 types = dict({
@@ -103,6 +104,58 @@ header = ["Timestamp",
           "Ambient_Temperature",
           "Ambient_Humidity",
           "Label"]
+
+class Feature(Enum):
+    ALL              = "All"
+    TIMESTAMP        = "Timestamp"
+    AGE              = "Age"
+    GENDER           = "Gender"
+    WEIGHT           = "Weight"
+    HEIGHT           = "Height"
+    BODYFAT          = "Bodyfat"
+    BODYTEMP         = "Bodytemp"
+    SPORT_LAST_HOUR  = "Sport-Last-Hour"
+    TIME_SINCE_MEAL  = "Time-Since-Meal"
+    TIREDNESS        = "Tiredness"
+    CLOTHING_LEVEL   = "Clothing-Level"
+    RADIATION_TEMP   = "Radiation-Temp"
+    PCE_AMB_TEMP     = "PCE-Ambient-Temp"
+    AIR_VELOCITY     = "Air-Velocity"
+    METABOLIC_RATE   = "Metabolic-Rate"
+    EMOTION_SELF     = "Emotion-Self"
+    EMOTION_ML       = "Emotion-ML"
+    RGB_FRONTAL      = "RGB_Frontal_View"
+    NOSE             = "Nose"
+    NECK             = "Neck"
+    SHOULDER_RIGHT   = "RShoulder"
+    SHOULDER_LEFT    = "LShoulder"
+    ELBOW_RIGHT      = "RElbow"
+    ELBOW_LEFT       = "LElbow"
+    EYE_RIGHT        = "REye"
+    EYE_LEFT         = "LEye"
+    EAR_RIGHT        = "REar"
+    EAR_LEFT         = "LEar"
+    WRIST_SKIN_TEMP  = "Wrist_Skin_Temperature"
+    HEART_RATE       = "Heart_Rate"
+    GSR              = "GSR"
+    AMBIENT_TEMP     = "Ambient_Temperature"
+    AMBIENT_HUMIDITY = "Ambient_Humidity"
+    LABEL            = "Label"
+
+SCALARS = [
+            "Age",
+            "Weight",
+            "Height",
+            "Bodytemp",
+            "Clothing-Level",
+            "Radiation-Temp",
+            "PCE-Ambient-Temp",
+            "Heart_Rate",
+            "Wrist_Skin_Temperature",
+            "GSR",
+            "Ambient_Temperature",
+            "Ambient_Humidity"
+            ]
 
 numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
 high_outliers = ["Heart_Rate","GSR"]

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate_decay', type=float, default=0.99999, help='Learning rate')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
-    parser.add_argument('--columns', default=[11, 31, 32, 33], nargs='+', help='The number of variables used for training')
+    parser.add_argument('--columns', default=["Radiation-Temp", "Ambient_Temperature", "Ambient_Humidity", "Label"], nargs='+', help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
     parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
