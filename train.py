@@ -74,6 +74,14 @@ if __name__ == "__main__":
             mode='max'
         )]
 
+        callbacks += [pl.callbacks.ModelCheckpoint(
+            verbose=True,
+            save_top_k=1,
+            filename='{epoch}-{valid_order_acc}',
+            monitor='valid_order_acc',
+            mode='max'
+        )]
+
 
 
     use_gpu = not args.gpus == 0
