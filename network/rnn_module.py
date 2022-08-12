@@ -31,7 +31,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.val_preds = []
         self.val_labels = []
         
-        self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.latent_size)
+        self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
 
         
     def configure_optimizers(self):
