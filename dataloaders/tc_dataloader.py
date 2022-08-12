@@ -409,7 +409,13 @@ class TC_Dataloader(BaseDataset):
     
 
 if __name__ == '__main__':
-    dataset = TC_Dataloader(root="H:/data/ThermalDataset", split="test", cols=SCALARS + [Feature.LABEL], use_sequence=True)
-    for d in dataset:
-        print(d)
+    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="test", cols=SCALARS + [Feature.LABEL], use_sequence=True)
+    for (x, y_class, y_order) in dataset:
+        y_class = torch.nn.functional.one_hot(y_class, 7).unsqueeze(0)
+        y_order = y_order.unsqueeze(0)
+        y_order_ = class2order(y_class)
+        y_class_ = order2class(y_order)
+        print(y_order, y_order_)#
+        print(y_class, y_class_)
         break
+        

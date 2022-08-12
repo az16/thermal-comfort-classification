@@ -248,13 +248,29 @@ class OrderAccuracy(nn.Module):
 # METRICS['f1-score'] = F1Score(num_classes=7)
 
 if __name__ == "__main__":
+    from dataloaders.utils import order2class, class2order
     # preds = torch.Tensor([[1.1],
     #                       [3.4],
     #                       [1.9],
     #                       [-3.7]])
     
-    preds = torch.Tensor([2.4,-3.1,2.2,1.6])
-    target = torch.IntTensor([2.2,4.2,2.2,1.2])
+    #preds = torch.Tensor([2.4,-3.1,2.2,1.6])
+    #target = torch.IntTensor([2.2,4.2,2.2,1.2])
     
-    print(rmse(preds, target))
-    print((mae(preds, target)))
+    #print(rmse(preds, target))
+    #print((mae(preds, target)))
+
+    gt_class = torch.rand((128, 7))
+    gt_order = class2order(gt_class.softmax(dim=1))
+
+    pred_class = torch.rand((128, 7))
+    pred_order = class2order(pred_class.softmax(dim=1))
+
+    acc_class = Accuracy()
+    acc_order = OrderAccuracy()
+
+    
+    print(acc_class(pred_class, torch.argmax(gt_class, dim=1)))
+    print(acc_order(pred_order, gt_order))
+    
+    
