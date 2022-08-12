@@ -1,8 +1,8 @@
 
 import pickle
 from PIL import Image
-from pythermalcomfort.models import pmv_ppd
-from pythermalcomfort.utilities import v_relative, clo_dynamic, met_typical_tasks
+#from pythermalcomfort.models import pmv_ppd
+#from pythermalcomfort.utilities import v_relative, clo_dynamic, met_typical_tasks
 import scipy.ndimage.interpolation as itpl
 from itertools import permutations as p 
 import cv2 
@@ -445,13 +445,10 @@ def noise(df, mean = 0, std = 0.3, masked=False):
             std: std parameter for the gaussian noise to sample from
             masked: are we adding noise to labels?
     """
-    if not masked:
-        return np.random.normal(mean, std, df)
-    full = np.random.normal(mean, std, df.shape[0])
-    tmp = np.array(df)
-    tmp = ~((-2 >= tmp)+(tmp >= 2))
-    full = full * tmp
-    return full
+    residuals = np.random.normal(mean, std, df)
+    if masked:
+        residuals = np.clip(residuals, -0.49, 0.49) # prevent shift more than 0.49. avoid 0 + noise = 1
+    return residuals
 
 def make_full_path(root, df):
     """
@@ -576,6 +573,28 @@ def label2idx(label, scale=7):
     except:
         return np.array(label)
 
+def order2class(o):
+    # o.shape (B, 7)
+    B = o.shape[0]
+    N = o.shape[1]
+    o = torch.round(o)
+    c = torch.zeros(B)
+    for b in range(B):
+        dim0 = torch.where(o[b]==1.0)[0]
+        if len(dim0):
+            c[b] = torch.argmax(dim0) + 1
+    return torch.nn.functional.one_hot(c.long(), N)
+        
+
+def class2order(c):
+    # c.shape (B, 7)
+    class_idx = torch.argmax(c, dim=1) # (B)
+    order_rep = torch.ones_like(c) # (B, 7)
+    for b,idx in enumerate(class_idx):
+        order_rep[b, idx:] = 0
+    return order_rep
+
+
 def order_representation(label, sklearn=False, scale=7):
     """
         Transforms labels to order representation after Cheng et al. (https://www.researchgate.net/publication/221533108_A_Neural_Network_Approach_to_Ordinal_Regression)
@@ -668,4 +687,3 @@ def feature_permutations(features, max_size=5):
         pms.extend(list(p(features, i)))
     pms = list(set([tuple(sorted(x)) for x in pms]))
     return pms
-        

@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('--skiprows', type=int, default=26, help='How many rows to skip while reading data lines')
     parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
+    parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
     
     
     args = parser.parse_args()
@@ -67,8 +68,8 @@ if __name__ == "__main__":
         callbacks += [pl.callbacks.ModelCheckpoint(
             verbose=True,
             save_top_k=1,
-            filename='{epoch}-{valid_acc}',
-            monitor='valid_acc',
+            filename='{epoch}-{valid_class_acc}',
+            monitor='valid_class_acc',
             mode='max'
         )]
 

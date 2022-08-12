@@ -226,7 +226,17 @@ class Accuracy(nn.Module):
         current_correct = torch.sum(torch.argmax(y_hat.softmax(dim=1), dim=1) == y).item()
         current_total = y_hat.shape[0]
         return current_correct/current_total
+
+class OrderAccuracy(nn.Module):
+    def __init__(self):
+        super().__init__()
     
+    def forward(self, y_hat, y, from_logits=False):
+        if from_logits:
+            y_hat = torch.argmax(y_hat, dim=1)
+        current_correct = torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
+        current_total = y_hat.shape[0]
+        return current_correct/current_total
 
 # METRICS = plf.__dict__ #pl.metrics.functional.__dict__ 
 # METRICS['mse'] = METRICS['mean_squared_error']

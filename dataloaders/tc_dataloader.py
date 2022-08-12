@@ -171,7 +171,6 @@ class TC_Dataloader(BaseDataset):
                 for key in grouped_removal:
                     if key in self.columns:  
                         self.df = remove_grouped_outliers(group='Label', col=key, df=self.df)
-            print(self.df)
             print(np.sum((self.df["Label"]==-1)))
             print(np.sum((self.df["Label"]==0)))
             print(np.sum((self.df["Label"]==1)))
@@ -381,8 +380,9 @@ class TC_Dataloader(BaseDataset):
 
             if not self.use_col_as_label:
                 label = label2idx(label, scale = self.scale)
-                #label = order_representation(label, scale=self.scale)            
-                label = torch.from_numpy(label)
+                order_label = order_representation(label, scale=self.scale)
+                order_label = torch.from_numpy(order_label).float()
+                class_label = torch.from_numpy(label).long()
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
                 #print(out.shape, index, (x,limit))
@@ -391,7 +391,7 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
          
-        return out.float(), label.long()#.type(torch.LongTensor)
+        return out.float(), class_label, order_label
     
     
     def __len__(self):
