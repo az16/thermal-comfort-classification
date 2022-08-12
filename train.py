@@ -60,6 +60,7 @@ if __name__ == "__main__":
     callbacks = []
 
     if args.dev: args.name = None
+    if args.loss == 'mse': args.use_weighted_loss = False
 
     if args.name:
         callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
