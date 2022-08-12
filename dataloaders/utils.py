@@ -584,6 +584,7 @@ def order2class(o):
         dim0 = torch.where(o[b]==1.0)[0]
         if len(dim0):
             c[b] = torch.argmax(dim0) + 1
+    c = torch.clip(c, 0, N-1)
     return torch.nn.functional.one_hot(c.long(), N).float().to(o)
         
 
