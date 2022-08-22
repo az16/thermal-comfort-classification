@@ -31,17 +31,17 @@ class TC_RNN_Module(pl.LightningModule):
         self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
-                                                    num_workers=cpu_count(), 
+                                                    num_workers=worker, 
                                                     pin_memory=True)
         self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=1, 
                                                     shuffle=False, 
-                                                    num_workers=cpu_count(), 
+                                                    num_workers=worker, 
                                                     pin_memory=True) 
         self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, forecasting=forecasting),
                                                 batch_size=1, 
                                                 shuffle=True, 
-                                                num_workers=cpu_count(), 
+                                                num_workers=worker, 
                                                 pin_memory=True)
         #self.pmv_results = PMV_Results()
         self.classification_loss = False
@@ -141,7 +141,7 @@ class TC_RNN_Module(pl.LightningModule):
         
         return {"loss": loss}
     
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, name="val"):
         """
             Defines what happens during one validation step.
             
@@ -160,8 +160,8 @@ class TC_RNN_Module(pl.LightningModule):
         else: y = y.float()
         loss = self.criterion(y_hat, y)
         accuracy = self.acc_val(y_hat, y)
-        self.log("val_loss", loss, prog_bar=True, logger=True)
-        self.log("val_acc", accuracy, prog_bar=True, logger=True)
+        self.log("{}_loss".format(name), loss, prog_bar=True, logger=True)
+        self.log("{}_acc".format(name), accuracy, prog_bar=True, logger=True)
        
         
         preds, y = self.prepare_cfm_data(y_hat, y)
@@ -169,6 +169,9 @@ class TC_RNN_Module(pl.LightningModule):
         self.val_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
+
+    def test_step(self, batch, batch_idx):
+        return self.validation_step(batch, batch_idx, "test")
         
     def on_validation_end(self):
         """
