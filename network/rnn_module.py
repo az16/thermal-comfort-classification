@@ -130,14 +130,7 @@ class TC_RNN_Module(pl.LightningModule):
         accuracy = self.acc_train(y_hat, y)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
-        # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        #print(int(preds[0]))
-        # # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[int(preds[0])])
-        self.train_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
     
@@ -164,38 +157,11 @@ class TC_RNN_Module(pl.LightningModule):
         self.log("{}_acc".format(name), accuracy, prog_bar=True, logger=True)
        
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        self.val_preds.append(self.label_names[int(preds[0])])
-        self.val_labels.append(self.label_names[int(y[0])])
+       
         
         return {"loss": loss}
 
     def test_step(self, batch, batch_idx):
         return self.validation_step(batch, batch_idx, "test")
         
-    def on_validation_end(self):
-        """
-            Defines what happens after validation is done for one epoch.
-        """
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
-    
-    def prepare_cfm_data(self, preds, y):
-        """
-            This method is used to convert predictions and labels to a representation
-            that can be turned into a confusion matrix.
-            
-            Args:
-                preds: the model predictions
-                y: the labels
-        """
-        preds = torch.sum(preds.cpu(), dim=1)
-        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
-        # print(preds)
-        # print(torch.round(preds))
-        preds = torch.round(preds)
-        y = torch.sum(y.cpu().long(), dim=1)
-        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
-        return preds, y
+   

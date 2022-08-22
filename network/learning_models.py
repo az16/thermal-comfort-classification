@@ -58,8 +58,8 @@ class RNN(nn.Module):
     def forward(self, x):
         #print(x.shape)
         self.lstm.flatten_parameters() #use multi GPU capabilities
-        _, (h_t, _) = self.lstm(x)
-        x = h_t[-1]
+        feat, (h_t, s_t) = self.lstm(x)
+        x = feat[:, -1]
         if self.n_layers == 1:
             x = self.dp_layer(x)
         x = self.fc1(x)

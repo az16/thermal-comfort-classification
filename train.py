@@ -62,7 +62,7 @@ if __name__ == "__main__":
     pl.seed_everything(args.seed)
     
     # Checkpoint callback to save best model parameters
-    callbacks += [pl.callbacks.ModelCheckpoint(
+    callbacks = [pl.callbacks.ModelCheckpoint(
         verbose=True,
         save_top_k=1,
         filename='{epoch}-{val_acc}',
@@ -86,7 +86,6 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer(
         fast_dev_run=args.dev,
-        profiler="simple",
         gpus=args.gpus,
         overfit_batches=1 if args.overfit else 0,
         precision=args.precision if use_gpu else 32,
