@@ -76,7 +76,7 @@ if __name__ == "__main__":
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
 
-    if args.version and args.wandb == "wandb":
+    if args.version and args.wandb:
         logger = pl.loggers.WandbLogger(project="ThermalComfort", name=args.version)
     elif args.version:
         logger = pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module, version=args.version)
