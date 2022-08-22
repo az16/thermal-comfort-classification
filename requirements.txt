@@ -5,4 +5,4 @@ pandas
 opencv-python
 seaborn
 scikit-learn
-
+wandb
