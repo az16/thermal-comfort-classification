@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
     parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
     parser.add_argument('--layers', type=int, default=2, help='Hidden layers')
-    parser.add_argument('--preprocess', action='store_true', help='Make dataloaders perform data cleaning and normalization')
+    parser.add_argument('--preprocess', default=1, type=int, help='Make dataloaders perform data cleaning and normalization')
     parser.add_argument('--use_weighted_loss', action='store_true', help='Use weighted cross entropy loss.')
     parser.add_argument('--data_augmentation', action='store_true', help='Do data augmentation on csv features.')
     parser.add_argument('--skiprows', type=int, default=26, help='How many rows to skip while reading data lines')
@@ -44,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
     parser.add_argument('--latent_size', default=64, type=int, help='Latent vector size.')
+    parser.add_argument('--patience', default=-1, type=int, help="Early stopping patience.")
     
     
     args = parser.parse_args()
@@ -77,7 +78,8 @@ if __name__ == "__main__":
             mode='max'
         )]
 
-
+    if args.patience > 0:
+        callbacks += [pl.callbacks.EarlyStopping(monitor="val_acc", min_delta=0.01, patience=args.patience, verbose=False, mode="max")]
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
