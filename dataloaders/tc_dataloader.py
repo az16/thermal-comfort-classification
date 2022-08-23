@@ -41,7 +41,7 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
+    def __init__(self, root, split, scale=7, stride=1, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
         self.split = split 
         self.root = Path(root) 
         self.forecasting = forecasting
@@ -52,6 +52,7 @@ class TC_Dataloader(BaseDataset):
         self.crop_size = crop_size
         self.use_imgs = use_imgs
         self.img_path = image_path
+        self.stride = stride
         self.use_col_as_label = not label_col is None
         self.col_label = None 
         if self.use_col_as_label: self.col_label = label_col
@@ -351,9 +352,12 @@ class TC_Dataloader(BaseDataset):
 
         n_feature = np.array(self.df.iloc[0, :-1]).shape[0]
         X = torch.zeros((self.sequence_size, n_feature))
+
+        start = index * self.stride
+        stop = start + self.sequence_size
         
-        x = np.asarray(self.df.iloc[index:index+self.sequence_size, :-1], dtype=np.float32)
-        y = np.asarray(self.df.iloc[index:index+self.sequence_size, -1], dtype=int)
+        x = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
+        y = np.asarray(self.df.iloc[start:stop, -1], dtype=int)
 
         x = torch.from_numpy(x)
 
@@ -378,7 +382,7 @@ class TC_Dataloader(BaseDataset):
         Returns:
             int: number of rows int the dataset
         """        
-        return self.df.shape[0]-self.sequence_size
+        return (self.df.shape[0]-self.sequence_size) // self.stride
     
     
 
