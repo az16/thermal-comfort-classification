@@ -23,14 +23,8 @@ class TC_RNN_Module(pl.LightningModule):
 
         self.wce = WeightedCrossEntropyLoss(num_categories, self.opt.use_weighted_loss)
         self.mse = torch.nn.MSELoss()
-        self.class_accuracy = Accuracy()        
-        self.order_accuracy = OrderAccuracy()
-        
-        self.train_preds = []
-        self.train_labels = []
-        self.val_preds = []
-        self.val_labels = []
-        
+        self.accuracy = Accuracy()        
+                
         self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
 
         
@@ -52,7 +46,7 @@ class TC_RNN_Module(pl.LightningModule):
     def forward(self, batch, name):
         x, y_class, y_order = batch
         y_hat = self.model(x)
-
+        B = y_class.shape[0]
         if self.opt.loss == 'wce':
             loss = self.wce(y_hat, y_class)
             pred_class = y_hat
@@ -65,23 +59,22 @@ class TC_RNN_Module(pl.LightningModule):
         wce = self.wce(pred_class, y_class)
         mse = self.mse(pred_order, y_order)
 
-        accuracy_class = self.class_accuracy(pred_class, y_class)
-        accuracy_order = self.order_accuracy(pred_order, y_order)
+        accuracy = self.accuracy(pred_class, y_class)
 
-        self.log("{}_loss".format(name), loss, prog_bar=True, logger=True)
-        self.log("{}_class_acc".format(name), accuracy_class, prog_bar=True, logger=True)
-        self.log("{}_order_acc".format(name), accuracy_order, prog_bar=True, logger=True)
-        self.log("{}_wce".format(name), wce, prog_bar=True, logger=True)
-        self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
-        return {
-            "loss": loss, 
-            "{}_wce".format(name): wce, 
-            "{}_mse".format(name): mse,
-            "{}_class_acc".format(name): accuracy_class,
-            "{}_order_acc".format(name): accuracy_order
+        results = {
+            "loss": loss,
+            "acc": accuracy,
+            "wce": wce, 
+            "mse": mse            
             }
-                                         
 
+        self.log_metrics(B, results, name)
+        return results
+
+    def log_metrics(self, batch_size, metrics, split):
+        for name, value in metrics.items():
+            self.log("{}_{}".format(split, name), value, prog_bar=True, logger=True, batch_size=batch_size)
+                                         
     def training_step(self, batch, batch_idx):
         return self(batch, "train")
     

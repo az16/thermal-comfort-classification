@@ -4,8 +4,6 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
-from network.regression_module import TC_MLP_Module
-from network.rcnn_module import TC_RCNN_Module
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.utils import Feature, SCALARS
 
@@ -70,19 +68,12 @@ if __name__ == "__main__":
         callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
     
         # Checkpoint callback to save best model parameters
+        
         callbacks += [pl.callbacks.ModelCheckpoint(
             verbose=True,
             save_top_k=1,
-            filename='{epoch}-{valid_class_acc}',
-            monitor='valid_class_acc',
-            mode='max'
-        )]
-
-        callbacks += [pl.callbacks.ModelCheckpoint(
-            verbose=True,
-            save_top_k=1,
-            filename='{epoch}-{valid_order_acc}',
-            monitor='valid_order_acc',
+            filename='{epoch}-{valid_acc}',
+            monitor='valid_acc',
             mode='max'
         )]
 
@@ -100,7 +91,7 @@ if __name__ == "__main__":
         enable_model_summary=True,
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
-        logger=pl.loggers.WandbLogger(project="ThermalComfort", name=args.name) if args.name else None,
+        logger=pl.loggers.WandbLogger(project="ThermalComfort", name=args.name) if args.name and not args.dev else None,
         callbacks=callbacks
     )
 
