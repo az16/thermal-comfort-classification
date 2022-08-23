@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
 from dataloaders.tc_dataloader import TC_Dataloader
-from dataloaders.utils import Feature, SCALARS
+from dataloaders.utils import Feature
 
 """
     In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called

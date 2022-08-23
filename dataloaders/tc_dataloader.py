@@ -58,7 +58,7 @@ class TC_Dataloader(BaseDataset):
        #self.use_pmv = use_pmv
         self.use_sequence = use_sequence
         self.sequence_size = sequence_size 
-        self.columns = [Feature(x).value for x in cols] #[header[x] for x in cols]
+        self.columns = parse_features(cols)
         if self.use_imgs and "RGB_Frontal_View" not in self.columns: self.columns.insert(-2, "RGB_Frontal_View")
         if self.use_col_as_label and "Label" in self.columns: self.columns.pop(-1); self.columns.append(self.col_label)
         self.continuous_labels = continuous_labels
@@ -348,51 +348,27 @@ class TC_Dataloader(BaseDataset):
         Args:
             index: the index in the dataframe to draw data from
         """
-        limit = index+1
-       
-        label = np.array(self.df.iloc[[index], -1])
-        if self.use_sequence:
-            if index+self.sequence_size+self.forecasting < self.df.shape[0]:
-                window = index+self.sequence_size+self.forecasting
-                limit = window
-                label = np.array(self.df.iloc[limit, -1])
-            else: 
-                limit = self.self.df.shape[0]-1
-                label = np.array(self.df.iloc[limit, -1])
-                if index == limit:
-                    limit += 1
-        #print(np.array(self.df.iloc[[index], :-1]).dtype)
-        out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
-        label = torch.from_numpy(label)
-        # print(limit)
-        # print(limit-self.forecasting < self.__len__())
-        
-        limit -= self.forecasting
-        #         if limit < index:
-        #             index -= (self.forecasting+self.sequence_size)
-        # else:
-        #     limit = self.__len__()-1
-        #     if index == limit:
-        #         limit += 1
-        if self.use_sequence:
-            out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
-            # print(out.shape)
 
-            if not self.use_col_as_label:
-                label = label2idx(label, scale = self.scale)
-                order_label = order_representation(label, scale=self.scale)
-                order_label = torch.from_numpy(order_label).float()
-                class_label = torch.from_numpy(label).long()
-            #handles padding in case sequence from file end is taken
-            if out.shape[0] < self.sequence_size:
-                #print(out.shape, index, (x,limit))
-                pad_range = self.sequence_size-out.shape[0]
-                last_sequence_line = torch.unsqueeze(out[-1], dim=0)
-                for i in range(0,pad_range):
-                    out = torch.cat((out,last_sequence_line), dim=0) 
-         
-        return out.float(), class_label, order_label
-    
+        n_feature = np.array(self.df.iloc[0, :-1]).shape[0]
+        X = torch.zeros((self.sequence_size, n_feature))
+        
+        x = np.asarray(self.df.iloc[index:index+self.sequence_size, :-1], dtype=np.float32)
+        y = np.asarray(self.df.iloc[index:index+self.sequence_size, -1], dtype=int)
+
+        x = torch.from_numpy(x)
+
+        if not len(np.unique(y)) == 1:
+            return self.__csv_only_return__(index - 1)
+
+        N = len(x)
+
+        X[0:N] = x
+        Y = y[0]
+
+        Y_class = label2idx(Y, scale=self.scale)
+        Y_order = order_representation(Y_class, scale=self.scale)
+
+        return X, Y_class, Y_order
     
     def __len__(self):
         """
@@ -402,20 +378,12 @@ class TC_Dataloader(BaseDataset):
         Returns:
             int: number of rows int the dataset
         """        
-        # print(self.df.shape[0])
-        # print(self.df.shape[0]-(self.sequence_size+self.forecasting))
-        return self.df.shape[0]-(self.sequence_size+self.forecasting)
+        return self.df.shape[0]-self.sequence_size
     
     
 
 if __name__ == '__main__':
-    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="test", cols=SCALARS + [Feature.LABEL], use_sequence=True)
-    for (x, y_class, y_order) in dataset:
-        y_class = torch.nn.functional.one_hot(y_class, 7).unsqueeze(0)
-        y_order = y_order.unsqueeze(0)
-        y_order_ = class2order(y_class)
-        y_class_ = order2class(y_order)
-        print(y_order, y_order_)#
-        print(y_class, y_class_)
-        break
+    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="validation", preprocess=True, use_sequence=True, data_augmentation=False, sequence_size=30, cols=Feature.BEST, downsample=10, forecasting=False, scale=7)
+    for d in tqdm(dataset):
+        pass
         

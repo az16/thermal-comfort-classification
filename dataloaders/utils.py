@@ -141,21 +141,8 @@ class Feature(Enum):
     AMBIENT_TEMP     = "Ambient_Temperature"
     AMBIENT_HUMIDITY = "Ambient_Humidity"
     LABEL            = "Label"
-
-SCALARS = [
-            "Age",
-            "Weight",
-            "Height",
-            "Bodytemp",
-            "Clothing-Level",
-            "Radiation-Temp",
-            "PCE-Ambient-Temp",
-            "Heart_Rate",
-            "Wrist_Skin_Temperature",
-            "GSR",
-            "Ambient_Temperature",
-            "Ambient_Humidity"
-            ]
+    BEST             = ["Radiation-Temp", "Ambient_Temperature", "Ambient_Humidity", "Label"]
+    SCALARS          = ["Age", "Weight", "Height", "Bodytemp", "Clothing-Level", "Radiation-Temp", "PCE-Ambient-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Temperature", "Ambient_Humidity"]
 
 numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
 high_outliers = ["Heart_Rate","GSR"]
@@ -165,6 +152,15 @@ categorical = ["Tiredness", "Emotion-ML", "Emotion-Self"]
 binary = ["Sport-Last-Hour"]
 optional = ["Weight", "Height", "Bodyfat"]
 image_only = ["RGB_Frontal_View"]
+
+def parse_features(feat):
+    if isinstance(feat, Feature):
+        value = feat.value
+        if isinstance(value, str): return [value]
+        elif isinstance(value, list): return value
+        else: raise ValueError(feat)
+    else:
+        return [Feature(x).value for x in feat]
 
 def narrow_labels(df, scale=2):
         """
@@ -621,10 +617,7 @@ def label2idx(label, scale=7):
     if scale == 2: idx = [0.0,1.0]
     elif scale == 3: idx = [-1.0,0.0,1.0]
     
-    try:
-        return np.array(float(idx.index(label)))
-    except:
-        return np.array(label)
+    return idx.index(label)
 
 def order2class(o):
     o = o.detach()
@@ -654,7 +647,7 @@ def class2order(c):
     return order_rep.to(c)
 
 
-def order_representation(label, sklearn=False, scale=7):
+def order_representation(label, scale=7):
     """
         Transforms labels to order representation after Cheng et al. (https://www.researchgate.net/publication/221533108_A_Neural_Network_Approach_to_Ordinal_Regression)
 
@@ -664,17 +657,11 @@ def order_representation(label, sklearn=False, scale=7):
             sklearn: are we using sklearn to train?
             scale: the scale type to be used (7,3,2)
     """
-    if sklearn:
-        return sk_order_representation(label)
-    # print(label)
-    # print(label.shape)
     if label == scale-1:
-        #print(np.ones(shape=(7)))
-        return np.ones(shape=(scale))
+        return torch.ones(scale)
     else:
-        category_vector = np.ones(shape=(scale))
-        category_vector[np.int8(label)+1:] = 0
-        #print(category_vector)
+        category_vector = torch.ones(scale)
+        category_vector[label+1:] = 0
         return category_vector
         
 def sk_order_representation(labels):
