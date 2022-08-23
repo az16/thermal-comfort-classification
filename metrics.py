@@ -38,10 +38,14 @@ class Accuracy(nn.Module):
 class OrderAccuracy(nn.Module):
     def __init__(self):
         super().__init__()
+        self.current_correct = 0
+        self.current_total = 0
     
-    def forward(self, y_hat, y, from_logits=False):
-        if from_logits:
-            y_hat = torch.argmax(y_hat, dim=1)
-        current_correct = torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
-        current_total = y_hat.shape[0]
-        return current_correct/current_total
+    def reset(self):
+        self.current_correct = 0
+        self.current_total = 0
+    
+    def forward(self, y_hat, y):
+        self.current_correct += torch.sum(torch.all((torch.round(y_hat) == y), dim=1)).item()
+        self.current_total += y_hat.shape[0]
+        return self.current_correct/self.current_total

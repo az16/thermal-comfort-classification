@@ -1,6 +1,5 @@
 from multiprocessing import cpu_count
-from metrics import Accuracy, OrderAccuracy
-from metrics import WeightedCrossEntropyLoss
+from metrics import Accuracy, OrderAccuracy, WeightedCrossEntropyLoss, OrderAccuracy
 import numpy as np 
 import torch
 import pytorch_lightning as pl
@@ -23,7 +22,8 @@ class TC_RNN_Module(pl.LightningModule):
 
         self.wce = WeightedCrossEntropyLoss(num_categories, self.opt.use_weighted_loss)
         self.mse = torch.nn.MSELoss()
-        self.accuracy = Accuracy()        
+        self.accuracy = Accuracy()
+        self.order_acc = OrderAccuracy() 
                 
         self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
 
@@ -43,7 +43,8 @@ class TC_RNN_Module(pl.LightningModule):
             }
         return [optimizer], [scheduler]
 
-    def forward(self, batch, name):
+    def forward(self, batch, batch_idx, name):
+        if batch_idx == 0: self.order_acc.reset()
         x, y_class, y_order = batch
         y_hat = self.model(x)
         B = y_class.shape[0]
@@ -60,10 +61,12 @@ class TC_RNN_Module(pl.LightningModule):
         mse = self.mse(pred_order, y_order)
 
         accuracy = self.accuracy(pred_class, y_class)
+        order_acc = self.order_acc(pred_order, y_order)
 
         results = {
             "loss": loss,
             "acc": accuracy,
+            "order_acc": order_acc,
             "wce": wce, 
             "mse": mse            
             }
@@ -76,10 +79,10 @@ class TC_RNN_Module(pl.LightningModule):
             self.log("{}_{}".format(split, name), value, prog_bar=True, logger=True, batch_size=batch_size)
                                          
     def training_step(self, batch, batch_idx):
-        return self(batch, "train")
+        return self(batch, batch_idx, "train")
     
     def validation_step(self, batch, batch_idx):
-        return self(batch, "valid")
+        return self(batch, batch_idx, "valid")
 
     def test_step(self, batch, batch_idx):
-        return self(batch, "test")
+        return self(batch, batch_idx, "test")
