@@ -79,7 +79,7 @@ if __name__ == "__main__":
         )]
 
     if args.patience > 0:
-        callbacks += [pl.callbacks.EarlyStopping(monitor="val_acc", min_delta=0.01, patience=args.patience, verbose=False, mode="max")]
+        callbacks += [pl.callbacks.EarlyStopping(monitor="valid_acc", min_delta=0.01, patience=args.patience, verbose=False, mode="max")]
 
     use_gpu = not args.gpus == 0
     sequence_based = (args.sequence_window > 0)
