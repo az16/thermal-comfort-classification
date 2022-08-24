@@ -94,11 +94,13 @@ class TC_RNN_Module(pl.LightningModule):
         x_input = torch.zeros((B, self.opt.sequence_window, self.opt.num_features)).to(x)
         x_input[:, 0:x.shape[1]] = x
         y_hat = self.model(x)
+
         if self.opt.loss == 'wce':
             loss = self.wce(y_hat, y_class)
             pred_class = y_hat
             pred_order = class2order(y_hat)            
         elif self.opt.loss == 'mse':
+            y_hat = y_hat.sigmoid()
             loss = self.mse(y_hat, y_order)
             pred_class = order2class(y_hat)
             pred_order = y_hat

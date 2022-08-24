@@ -62,8 +62,8 @@ class RNN(nn.Module):
         
     def forward(self, x):
         self.lstm.flatten_parameters()
-        _, (h_t, _) = self.lstm(x)
-        x = h_t[-1]
+        feat, _ = self.lstm(x)
+        x = feat[:, -1]
         x = self.fc1(x)
         x = self.fc2(x)
       
