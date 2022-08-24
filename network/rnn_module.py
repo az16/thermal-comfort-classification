@@ -7,10 +7,56 @@ from network.learning_models import RNN
 
 from dataloaders.path import *
 from dataloaders.utils import class2order, order2class
+from metrics import OrderAccuracy, Accuracy
 
 """
     The training module for the LSTM architecture is defined here. If LSTM training is supposed to be adjusted, change this.
 """
+class Oracle(pl.LightningModule):
+    def __init__(self) -> None:
+        super().__init__()
+        self.mse = torch.nn.MSELoss()
+        self.accuracy = Accuracy()
+        self.order_acc = OrderAccuracy()
+
+    def predict(self, batch):
+        _, _, y_order = batch
+        return y_order
+
+    def test_step(self, batch, batch_idx):
+        _, y_class, y_order = batch
+        y_hat = self.predict(batch)
+        B = y_order.shape[0]
+        
+        loss = self.mse(y_hat, y_order)
+        pred_class = order2class(y_hat)
+        pred_order = y_hat
+
+        mse = self.mse(pred_order, y_order)
+
+        accuracy = self.accuracy(pred_class, y_class)
+        order_acc = self.order_acc(pred_order, y_order)
+
+        results = {
+            "loss": loss,
+            "acc": accuracy,
+            "order_acc": order_acc,
+            "mse": mse            
+            }
+
+        self.log_metrics(B, results, 'test')
+        return results
+
+    def log_metrics(self, batch_size, metrics, split):
+        for name, value in metrics.items():
+            self.log("{}_{}".format(split, name), value, prog_bar=True, logger=True, batch_size=batch_size)
+
+
+class RandomGuess(Oracle):
+    def predict(self, batch):
+        _, _, y_order = batch
+        return torch.rand_like(y_order)
+    
 class TC_RNN_Module(pl.LightningModule):
     def __init__ (self, opt):
         super().__init__()
@@ -44,7 +90,6 @@ class TC_RNN_Module(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def forward(self, batch, batch_idx, name):
-        if batch_idx == 0: self.order_acc.reset()
         x, y_class, y_order = batch
         y_hat = self.model(x)
         B = y_class.shape[0]
