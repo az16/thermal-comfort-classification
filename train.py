@@ -106,12 +106,12 @@ if __name__ == "__main__":
             })
     
 
-    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=args.scale),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=args.scale),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 
