@@ -45,7 +45,6 @@ if __name__ == "__main__":
     parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
     parser.add_argument('--latent_size', default=64, type=int, help='Latent vector size.')
     parser.add_argument('--patience', default=-1, type=int, help="Early stopping patience.")
-    parser.add_argument('--stride', default=1, type=int, help="Dataset stride.")
     
     
     
@@ -107,12 +106,12 @@ if __name__ == "__main__":
             })
     
 
-    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, stride=args.stride, split="training", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, use_sequence=sequence_based, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, stride=1, split="validation", preprocess=True, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, use_sequence=sequence_based, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, forecasting=args.forecasting, scale=args.scale),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 

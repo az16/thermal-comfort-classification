@@ -41,28 +41,14 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, scale=7, stride=1, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
+    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, sequence_size=10, data_augmentation=False, cols=None):
         self.split = split 
         self.root = Path(root) 
-        self.forecasting = forecasting
         self.scale = scale
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
         self.augment_data = data_augmentation
-        self.output_size = output_size
-        self.crop_size = crop_size
-        self.use_imgs = use_imgs
-        self.img_path = image_path
-        self.stride = stride
-        self.use_col_as_label = not label_col is None
-        self.col_label = None 
-        if self.use_col_as_label: self.col_label = label_col
-       #self.use_pmv = use_pmv
-        self.use_sequence = use_sequence
         self.sequence_size = sequence_size 
         self.columns = parse_features(cols)
-        if self.use_imgs and "RGB_Frontal_View" not in self.columns: self.columns.insert(-2, "RGB_Frontal_View")
-        if self.use_col_as_label and "Label" in self.columns: self.columns.pop(-1); self.columns.append(self.col_label)
-        self.continuous_labels = continuous_labels
         self.metabolic = 1.0 #in met
         self.air_vel = 0.1 #in m/s
         self.downsample = downsample
@@ -70,22 +56,11 @@ class TC_Dataloader(BaseDataset):
         assert not cols is None, "Specify which columns to use as inputs for training."
         print("Using these features: {0}".format(self.columns))
         
-        self.rgb_transform = None 
-        self.img_list = None 
-        if self.use_imgs:
-            if self.split == "training": self.rgb_transform = self.train_transform
-            else: self.rgb_transform = self.val_transform
-            
         self.load_file_contents(split)
         
-        
-        #do image data-augmentation in case images should be used
-        if self.augment_data and "RGB_Fronal_View" in cols:
-            if self.split == "training": self.transform = self.train_transform
-            elif self.split == "validation": self.transform = self.val_transform
-        
-        #if not self.preprocessing_config is None:
-        self.preprocess()    
+        self.preprocess()
+        self.pre_compute_labels() 
+        print("Using {} datapoint for split {}".format(len(self.data), self.split))   
     
     def load_file_contents(self, split):
         """
@@ -106,30 +81,12 @@ class TC_Dataloader(BaseDataset):
         file_names = [self.root/x for x in file_names]
         print("Found {0} {1} files at {2}".format(len(file_names),self.split,self.root))
         
-        # train_limit = int(len(file_names)*0.6)
-        # val_size = int((len(file_names)-train_limit)*0.5)
-        # val_limit = train_limit+val_size
-        # test_size = int(len(file_names)-val_limit)
-        # if split == "training": file_names = file_names[:train_limit]; print("Using {0} files for {1}".format(train_limit, self.split))
-        # elif split == "validation": file_names = file_names[train_limit:val_limit]; print("Using {0} files for {1}".format(val_size, self.split))
-        # elif split == "test": file_names = file_names[val_limit:]; print("Using {0} files for {1}".format(test_size, self.split))
-
-        #load .csv contents as list
         print("Loading contents..")
-        if self.use_imgs:
-            frames = [pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)]
-            frames = [x.drop(x.tail(1000).index) for x in frames]
-            self.df = pd.concat(frames)
-        else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
+        
+        self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
         self.df = narrow_labels(self.df, self.scale)
         if not self.downsample is None:
-            # print(self.df.shape)
-            # print(self.downsample)
             self.df = self.df[self.df.index % self.downsample == 0] 
-            # print(self.df.shape)
-        if self.use_col_as_label:
-            self.df.rename({self.col_label:"Label"})
-        print("Creating data frames..")
         
         print("File contents loaded!")
         
@@ -189,10 +146,6 @@ class TC_Dataloader(BaseDataset):
                     #if not (self.use_col_as_label and self.col_label == key):
                     #print(noise(self.df[key].shape))
                     self.df[key] = self.df[key] + noise(self.df[key].shape)
-
-        if self.continuous_labels:
-            print("Using continuous labels.")
-            self.df["Label"] = self.df["Label"] + noise(self.df["Label"], masked=True)
                 
         
         if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
@@ -206,49 +159,8 @@ class TC_Dataloader(BaseDataset):
                 #print(args)
                 self.df[key] = func(*args)
         
-        if self.use_imgs:
-            if self.split == 'validation': 
-                self.df["RGB_Frontal_View"]=self.df["RGB_Frontal_View"].replace({'_6_': '_5_'}, regex=True)
-            paths = list(self.df["RGB_Frontal_View"].replace({'./images/study/': self.img_path}, regex=True))
-            self.df.pop("RGB_Frontal_View")
-            self.img_list = paths
-   
-        
         print("Pre-processing done!\r\n")
-    
-    def train_transform(self, rgb):
-        """
-        This function defines the data augmentation for training images
 
-
-        Args:
-            rgb: the rgb image tensor to do data augmentation for
-        """
-        if not rgb is None:
-            angle = np.random.uniform(-5.0, 5.0)  # random rotation degrees
-            do_flip = np.random.uniform(0.0, 1.0) < 0.5  # random horizontal flip
-
-            rgb = center_crop(rgb, self.crop_size)
-            rgb = cv2.resize(rgb, self.output_size, interpolation=cv2.INTER_AREA)
-            rgb = rotate(angle, rgb)
-            rgb = horizontal_flip(rgb, do_flip)
-            rgb = np.asfarray(rgb, dtype='float') / 255
-        
-        return rgb
-    
-    def val_transform(self, rgb):
-        """
-        This function defines the data augmentation for validation images.
-
-        Args:
-            rgb: the rgb image tensor to do data augmentation for
-        """
-        rgb = center_crop(rgb, self.crop_size)
-        rgb = cv2.resize(rgb, self.output_size, interpolation=cv2.INTER_AREA)
-        rgb = np.asfarray(rgb, dtype='float') / 255
-
-        
-        return rgb
     
     def __getitem__(self, index):
         """
@@ -260,85 +172,43 @@ class TC_Dataloader(BaseDataset):
             sequence or single input variables, single label
         """
 
-        if self.use_imgs: return self.__img_return__(index)
-        else: return self.__csv_only_return__(index)
-            
-    def __img_return__(self, index):
-        """
-        This function defines how input and labels are returned if images are supposed
-        to be used for training.
+        return self.__csv_only_return__(index)
 
+    def pre_compute_labels(self):
+        class_indices = []
+        for index in tqdm(range(self.df.shape[0]-self.sequence_size), desc="Precompute labels..."):
+            start = index
+            stop = start + self.sequence_size
+            y = np.asarray(self.df.iloc[start:stop, -1], dtype=int)
+            if not len(np.unique(y)) == 1: continue
+            class_indices.append([index, y[0]])
 
-        Args:
-            index: the index in the dataframe to draw data from
-        """
-        limit = index+1
-        # print(len(self.df["Label"]))
-        # print(self.__len__())
-        label = np.array(self.df.iloc[[index], -1])
-        if self.use_sequence:
-            #print("dataframe len: {0}".format(len(self.data_frame["age"])))
-            if index+self.sequence_size < self.__len__():
-                window = index+self.sequence_size
-                limit = window
-                label = np.array(self.df.iloc[limit, -1])
-            else: 
-                limit = self.__len__()-1
-                label = np.array(self.df.iloc[limit, -1])
-                if index == limit:
-                    limit += 1
+        class_indices = np.array(class_indices)
+        print("Found {} data points".format(len(class_indices)))
+        class_ids, counts = np.unique(class_indices[:,1], return_counts=True)
+        print("Class ids: ", class_ids)
+
         
-        rgb_input = None
-        if self.use_imgs:
-            rgb = self.img_list[index]
-            rgb = np.asarray(Image.open(rgb).convert('RGB'), dtype=np.uint8)
-            if self.use_sequence: 
-                rgb = self.img_list[index:limit]
-                rgb = [np.asarray(Image.open(x).convert('RGB'), dtype=np.uint8) for x in rgb]
-                if len(rgb) < self.sequence_size:
-                    #print("Size before padding: {0}".format(out.shape))
-                    pad_range = self.sequence_size-len(rgb)
-                    last_rgb = rgb[-1]
-                    pad = [last_rgb for x in range(0,pad_range)]
-                    rgb.extend(pad)
-            
-            if not self.rgb_transform is None and not self.use_sequence:
-                rgb_np = self.rgb_transform(rgb)
-                rgb_input = to_tensor(rgb_np)
-            elif not self.rgb_transform is None and self.use_sequence:
-                rgb_input = [torch.unsqueeze(to_tensor(self.rgb_transform(x)), dim=0) for x in rgb]
-                #print(rgb_input[0].shape)
-                rgb_input = torch.cat(rgb_input, dim=0)
-                #rgb_input = to_tensor(rgb_np)
-            else:
-                raise (RuntimeError("transform not defined"))
-        
-        out = None
-        out = torch.from_numpy(np.array(self.df.iloc[[index], :-1])), rgb_input
-        label = torch.from_numpy(label)
-        # print(out)
-        # print(label)
-        if self.use_sequence:
-            out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
-            #out = torch.unsqueeze(out, dim=1)
-            #out = torch.cat(out, dim=1)
-            label = label2idx(label, scale=self.scale)
-            label = order_representation(label, scale=self.scale)
-            label = torch.from_numpy(label)
-            #handles padding in case sequence from file end is taken
-            if out.shape[0] < self.sequence_size:
-                #print("Size before padding: {0}".format(out.shape))
-                pad_range = self.sequence_size-out.shape[0]
-                last_sequence_line = torch.unsqueeze(out[-1], dim=0)
-                for i in range(0,pad_range):
-                    out = torch.cat((out,last_sequence_line), dim=0) 
-                #print("Size after padding: {0}".format(out.shape))
-            
-            
-        # print(out)
-        # print(label)
-        # print(label.shape)
-        return (rgb_input, out.float()), label.long()#.type(torch.LongTensor)
+        for i, c in enumerate(counts):
+            print("Class {} counts: {} ({}%)".format(i, c, np.round(c / class_indices.shape[0], 3) * 100))
+
+        class_min = np.argmin(counts)
+        count_min = counts[class_min]
+        print("Equalizing classes to {} with count {}".format(class_min, count_min))
+
+        new_indices = []
+        for cat_idx, cnt in enumerate(counts):
+            indices = np.array([[idx, cat_] for [idx, cat_] in class_indices if cat_ == class_ids[cat_idx]])
+            stride = np.round(cnt / count_min)
+            stride = int(stride)
+            indices = indices[::stride]
+            new_indices += indices.tolist()
+        new_indices = np.array(new_indices)
+        class_ids_new, counts = np.unique(new_indices[:,1], return_counts=True)
+        for i, c in enumerate(counts):
+            print("Class {} counts: {} ({}%)".format(i, c, np.round(c / new_indices.shape[0], 3) * 100))
+        assert np.all(class_ids == class_ids_new), "equalizing srewed class ids!!"
+        self.data = new_indices
     
     def __csv_only_return__(self, index):
         """
@@ -353,21 +223,13 @@ class TC_Dataloader(BaseDataset):
         n_feature = np.array(self.df.iloc[0, :-1]).shape[0]
         X = torch.zeros((self.sequence_size, n_feature))
 
-        start = index * self.stride
+        [start, Y] = self.data[index]
         stop = start + self.sequence_size
         
         x = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
-        y = np.asarray(self.df.iloc[start:stop, -1], dtype=int)
-
         x = torch.from_numpy(x)
-
-        if not len(np.unique(y)) == 1:
-            return self.__csv_only_return__(index - 1)
-
         N = len(x)
-
         X[0:N] = x
-        Y = y[0]
 
         Y_class = label2idx(Y, scale=self.scale)
         Y_order = order_representation(Y_class, scale=self.scale)
@@ -382,12 +244,13 @@ class TC_Dataloader(BaseDataset):
         Returns:
             int: number of rows int the dataset
         """        
-        return (self.df.shape[0]-self.sequence_size) // self.stride
+        return len(self.data)
     
     
 
 if __name__ == '__main__':
-    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="validation", preprocess=True, use_sequence=True, data_augmentation=False, sequence_size=30, cols=Feature.BEST, downsample=10, forecasting=False, scale=7)
-    for d in tqdm(dataset):
-        pass
+    dataset = TC_Dataloader(root="F:/data/ThermalDataset", split="training", preprocess=True, data_augmentation=False, sequence_size=60, cols=Feature.BEST, downsample=10, scale=7)
+    for (x, y_class, y_order) in dataset:
+        print(x, y_class, y_order)
+        break
         
