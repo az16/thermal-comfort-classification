@@ -142,7 +142,7 @@ class Feature(Enum):
     AMBIENT_HUMIDITY = "Ambient_Humidity"
     LABEL            = "Label"
     BEST             = ["Radiation-Temp", "Ambient_Temperature", "Ambient_Humidity", "Label"]
-    SCALARS          = ["Age", "Weight", "Height", "Bodytemp", "Clothing-Level", "Radiation-Temp", "PCE-Ambient-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Temperature", "Ambient_Humidity"]
+    SCALARS          = ["Age", "Weight", "Height", "Bodytemp", "Clothing-Level", "Radiation-Temp", "PCE-Ambient-Temp", "Heart_Rate", "Wrist_Skin_Temperature", "GSR", "Ambient_Temperature", "Ambient_Humidity", "Label"]
 
 numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
 high_outliers = ["Heart_Rate","GSR"]

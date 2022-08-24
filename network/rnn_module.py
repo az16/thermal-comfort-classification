@@ -60,18 +60,17 @@ class RandomGuess(Oracle):
 class TC_RNN_Module(pl.LightningModule):
     def __init__ (self, opt):
         super().__init__()
+        opt.num_features = len(opt.columns)-1 #-1 to neglect labels
+        opt.num_categories = 7 #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
         self.save_hyperparameters()
-        self.opt = opt
+        self.opt = opt        
 
-        num_features = len(self.opt.columns)-1 #-1 to neglect labels
-        num_categories = self.opt.scale #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
-
-        self.wce = WeightedCrossEntropyLoss(num_categories, self.opt.use_weighted_loss)
+        self.wce = WeightedCrossEntropyLoss(self.opt.num_categories, self.opt.use_weighted_loss)
         self.mse = torch.nn.MSELoss()
         self.accuracy = Accuracy()
         self.order_acc = OrderAccuracy() 
                 
-        self.model = RNN(num_features, num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
+        self.model = RNN(self.opt.num_features, self.opt.num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
 
         
     def configure_optimizers(self):
@@ -89,10 +88,12 @@ class TC_RNN_Module(pl.LightningModule):
             }
         return [optimizer], [scheduler]
 
-    def forward(self, batch, batch_idx, name):
+    def forward(self, batch, batch_idx, name):        
         x, y_class, y_order = batch
-        y_hat = self.model(x)
         B = y_class.shape[0]
+        x_input = torch.zeros((B, self.opt.sequence_window, self.opt.num_features)).to(x)
+        x_input[:, 0:x.shape[1]] = x
+        y_hat = self.model(x)
         if self.opt.loss == 'wce':
             loss = self.wce(y_hat, y_class)
             pred_class = y_hat

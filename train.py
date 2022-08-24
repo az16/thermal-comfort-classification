@@ -30,18 +30,15 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--learning_rate_decay', type=float, default=0.99999, help='Learning rate')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
-    parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
+    parser.add_argument('--sequence_window', type=int, default=30, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--columns', default=["Radiation-Temp", "Ambient_Temperature", "Ambient_Humidity", "Label"], nargs='+', help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
     parser.add_argument('--hidden',type=int, default=128, help='Hidden states in LSTM')
-    parser.add_argument('--image_path', default='/mnt/hdd/albin_zeqiri/ma/dataset/rgb/tcs_study/', help='Path to training images')
     parser.add_argument('--layers', type=int, default=2, help='Hidden layers')
     parser.add_argument('--preprocess', default=1, type=int, help='Make dataloaders perform data cleaning and normalization')
     parser.add_argument('--use_weighted_loss', default=0, type=int, help='Use weighted cross entropy loss.')
     parser.add_argument('--data_augmentation', default=0, type=int, help='Do data augmentation on csv features.')
     parser.add_argument('--skiprows', type=int, default=26, help='How many rows to skip while reading data lines')
-    parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
-    parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
     parser.add_argument('--latent_size', default=64, type=int, help='Latent vector size.')
     parser.add_argument('--patience', default=-1, type=int, help="Early stopping patience.")
@@ -63,8 +60,8 @@ if __name__ == "__main__":
 
     if args.dev: args.name = None
     if args.loss == 'mse': args.use_weighted_loss = False
-    if Feature.ALL.value in args.columns:
-        args.columns = SCALARS + [Feature.LABEL]
+    if "best" in args.columns:
+        args.columns = Feature.BEST
 
     if args.name:
         callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
@@ -106,17 +103,18 @@ if __name__ == "__main__":
             })
     
 
-    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=args.scale),
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=7),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, data_augmentation=False, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=args.scale),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, data_augmentation=False, sequence_size=30, cols=args.columns, downsample=5, scale=7),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 
                                                 pin_memory=True)     
     
+    args.cols = train_loader.dataset.columns
     model = TC_RNN_Module(args)
     
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)

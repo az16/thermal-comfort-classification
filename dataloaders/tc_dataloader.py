@@ -221,10 +221,13 @@ class TC_Dataloader(BaseDataset):
         """
 
         n_feature = np.array(self.df.iloc[0, :-1]).shape[0]
-        X = torch.zeros((self.sequence_size, n_feature))
+        sequence_size = self.sequence_size
+        if self.augment_data and np.random.rand() > 0.5:
+            sequence_size = np.random.randint(30, self.sequence_size+1)
+        X = torch.zeros((sequence_size, n_feature))
 
         [start, Y] = self.data[index]
-        stop = start + self.sequence_size
+        stop = start + sequence_size
         
         x = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
         x = torch.from_numpy(x)
