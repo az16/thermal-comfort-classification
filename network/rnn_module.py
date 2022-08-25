@@ -8,6 +8,8 @@ from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
+from dataloaders.utils import order2class
+from torchmetrics import Accuracy as TopK
 
 """
     The training module for the LSTM architecture is defined here. If LSTM training is supposed to be adjusted, change this.
@@ -51,6 +53,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
+        self.top2 = TopK(num_classes=7, top_k=2)
         self.train_preds = []
         self.train_labels = []
         self.val_preds = []
@@ -103,6 +106,9 @@ class TC_RNN_Module(pl.LightningModule):
         return self.train_loader
 
     def val_dataloader(self):
+        return self.val_loader 
+
+    def predict_dataloader(self):
         return self.val_loader  
     
     def test_dataloader(self):
@@ -153,15 +159,21 @@ class TC_RNN_Module(pl.LightningModule):
         else: y = y.float()
         loss = self.criterion(y_hat, y)
         accuracy = self.acc_val(y_hat, y)
+        top2 = self.top2(order2class(y_hat), torch.argmax(order2class(y), dim=-1))
         self.log("{}_loss".format(name), loss, prog_bar=True, logger=True)
         self.log("{}_acc".format(name), accuracy, prog_bar=True, logger=True)
-       
-        
-       
-        
+        self.log("{}_top2".format(name), top2, prog_bar=True, logger=True)       
         return {"loss": loss}
 
     def test_step(self, batch, batch_idx):
         return self.validation_step(batch, batch_idx, "test")
+
+    def predict_step(self, batch, batch_idx):
+        x, y = batch
         
-   
+        y_hat = self(x)
+
+        y_hat = order2class(y_hat)
+        y = order2class(y)
+
+        return y_hat, y

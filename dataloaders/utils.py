@@ -669,3 +669,30 @@ def feature_permutations(features, max_size=5):
     pms = list(set([tuple(sorted(x)) for x in pms]))
     return pms
         
+
+def order2class(o):
+    o = o.detach()
+    # o.shape (B, 7)
+    B = o.shape[0]
+    N = o.shape[1]
+    o = torch.round(o)
+    c = torch.zeros(B)
+    for b in range(B):
+        dim0 = torch.where(o[b]==1.0)[0]
+        if len(dim0):
+            c[b] = torch.argmax(dim0)
+        else:
+            c[b] = 0
+    c = torch.clip(c, 0, N-1)
+    return torch.nn.functional.one_hot(c.long(), N).float().to(o)
+        
+
+def class2order(c):    
+    c = c.detach()
+    if torch.sum(c[0]) - 1.0 > 1e-6: c=c.softmax(dim=1)
+    # c.shape (B, 7)
+    class_idx = torch.argmax(c, dim=1) # (B)
+    order_rep = torch.ones_like(c) # (B, 7)
+    for b,idx in enumerate(class_idx):
+        order_rep[b, idx+1:] = 0
+    return order_rep.to(c)

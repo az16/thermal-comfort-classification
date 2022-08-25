@@ -1,27 +1,26 @@
-import sys
-import random
-import torch
-from dataloaders.path import Path
 import pytorch_lightning as pl
+import torch
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
-from network.regression_module import TC_MLP_Module
-from network.rcnn_module import TC_RCNN_Module
 
-"""
-    In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called
-"""
-
+import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay
 
 if __name__ == "__main__":
     
     
-    parser = ArgumentParser('Trains thermal comfort estimation models')
+    parser = ArgumentParser('Evaluate model.')
     parser.add_argument('--ckpt', required=True)
+    parser.add_argument('--path', required=True)
 
     args = parser.parse_args()
 
-
     trainer = pl.Trainer(gpus=-1)
-    module = TC_RNN_Module.load_from_checkpoint(args.ckpt, scale=7)
-    trainer.test(model=module)
+    module = TC_RNN_Module.load_from_checkpoint(args.ckpt, scale=7, path=args.path)
+    trainer.validate(model=module)
+    result = trainer.predict(model=module)
+    pred = [torch.argmax(p).item() for (p,g) in result]
+    gt = [torch.argmax(g).item() for (p,g) in result]
+
+    ConfusionMatrixDisplay.from_predictions(gt, pred)
+    plt.show()
