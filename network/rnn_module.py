@@ -116,7 +116,7 @@ class TC_RNN_Module(pl.LightningModule):
                 batch: the current training batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
+        if batch_idx == 0: self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -142,7 +142,7 @@ class TC_RNN_Module(pl.LightningModule):
                 batch: the current validation batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
+        if batch_idx == 0: self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
