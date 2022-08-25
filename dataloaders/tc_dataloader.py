@@ -220,23 +220,18 @@ class TC_Dataloader(BaseDataset):
             index: the index in the dataframe to draw data from
         """
 
-        n_feature = np.array(self.df.iloc[0, :-1]).shape[0]
-        X = torch.zeros((self.sequence_size, n_feature))
-
         [start, Y] = self.data[index]
         stop = start + self.sequence_size
         
-        x = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
-        x = torch.from_numpy(x)
-        N = len(x)
-        X[0:N] = x
+        X = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
+        X = torch.from_numpy(X)
 
         Y_class = label2idx(Y, scale=self.scale)
         Y_order = order_representation(Y_class, scale=self.scale)
 
         if self.augment_data and np.random.rand() > 0.5:
-            i = np.random.randint(self.sequence_size // 2, self.sequence_size + 1)
-            X[i:, :] = 0 # randomly set values to zero.
+            i = np.random.randint(30, self.sequence_size + 1)
+            X[i:, :] = -1.0 # randomly set values to zero.
 
         return X, Y_class, Y_order
     

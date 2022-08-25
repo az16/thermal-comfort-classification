@@ -91,7 +91,7 @@ class TC_RNN_Module(pl.LightningModule):
     def forward(self, batch, batch_idx, name):        
         x, y_class, y_order = batch
         B = y_class.shape[0]
-        x_input = torch.zeros((B, self.opt.sequence_window, self.opt.num_features)).to(x)
+        x_input = -torch.ones((B, self.opt.sequence_window, self.opt.num_features)).to(x)
         x_input[:, 0:x.shape[1]] = x
         y_hat = self.model(x)
 
@@ -134,3 +134,20 @@ class TC_RNN_Module(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         return self(batch, batch_idx, "test")
+
+    def predict_step(self, batch, batch_idx):
+        x, y_class, y_order = batch
+        B = y_class.shape[0]
+        x_input = torch.zeros((B, self.opt.sequence_window, self.opt.num_features)).to(x)
+        x_input[:, 0:x.shape[1]] = x
+        y_hat = self.model(x)
+
+        if self.opt.loss == 'wce':
+            pred_class = y_hat
+            pred_order = class2order(y_hat)            
+        elif self.opt.loss == 'mse':
+            y_hat = y_hat.sigmoid()
+            pred_class = order2class(y_hat)
+            pred_order = y_hat
+
+        return y_class, pred_class

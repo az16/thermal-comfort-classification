@@ -7,6 +7,9 @@ from argparse import ArgumentParser
 from network.rnn_module import RandomGuess, TC_RNN_Module, Oracle
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.utils import Feature
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay
 
 """
     In this the training flags are defined. Training modules have to be included here so that flags can be passed when modules are called
@@ -41,9 +44,10 @@ if __name__ == "__main__":
     if args.ckpt == "random":
         model = RandomGuess()
     else:
+        print("Loading checkpoint: ", args.ckpt)
         model = TC_RNN_Module.load_from_checkpoint(args.ckpt)
 
-    test_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, data_augmentation=False, sequence_size=30, cols=Feature.BEST, downsample=10, scale=7),
+    test_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=True, data_augmentation=False, sequence_size=30, cols=Feature.BEST, downsample=5, scale=7),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=args.worker, 
@@ -51,5 +55,11 @@ if __name__ == "__main__":
     
     
     
-    result = trainer.test(model=model, dataloaders=test_loader, verbose=True)
-    print(result)
+    #result = trainer.test(model=model, dataloaders=test_loader, verbose=False)
+    #print(result)
+    data = trainer.predict(model=model, dataloaders=test_loader)
+    gt = [g.item() for (g, p) in data]
+    pred = [torch.argmax(p).item() for (g, p) in data]
+    
+    ConfusionMatrixDisplay.from_predictions(gt, pred)
+    plt.show()
