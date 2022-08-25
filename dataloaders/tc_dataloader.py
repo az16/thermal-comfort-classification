@@ -5,6 +5,7 @@ from tqdm import tqdm
 from dataloaders.utils import *
 from PIL import Image
 import pandas as pd 
+from sklearn.utils.class_weight import compute_class_weight
 
 import torch
 import numpy as np
@@ -41,10 +42,11 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, sequence_size=10, data_augmentation=False, cols=None):
+    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, sequence_size=10, data_augmentation=False, cols=None, balance_classes=False):
         self.split = split 
         self.root = Path(root) 
         self.scale = scale
+        self.balance_classes = balance_classes
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
         self.augment_data = data_augmentation
         self.sequence_size = sequence_size 
@@ -139,14 +141,7 @@ class TC_Dataloader(BaseDataset):
             #    self.df["pmv_index"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["PCE-Ambient-Temp"], self.df["Ambient_Humidity"])
             
             #normalize where necessary
-        if self.augment_data:
-            print("Augmenting data..")
-            for key in self.columns:
-                if key in numeric_safe:
-                    #if not (self.use_col_as_label and self.col_label == key):
-                    #print(noise(self.df[key].shape))
-                    self.df[key] = self.df[key] + noise(self.df[key].shape)
-                
+                       
         
         if isinstance(self.preprocessing_config, bool) and self.preprocessing_config:
             print("Normalizing..")
@@ -160,6 +155,11 @@ class TC_Dataloader(BaseDataset):
                 self.df[key] = func(*args)
         
         print("Pre-processing done!\r\n")
+
+    @property
+    def class_weights(self):
+        y = [label2idx(v, scale=self.scale) for v in self.data[:, 1]]
+        return compute_class_weight(class_weight='balanced', classes=np.arange(7), y=y)
 
     
     def __getitem__(self, index):
@@ -192,23 +192,25 @@ class TC_Dataloader(BaseDataset):
         for i, c in enumerate(counts):
             print("Class {} counts: {} ({}%)".format(i, c, np.round(c / class_indices.shape[0], 3) * 100))
 
-        class_min = np.argmin(counts)
-        count_min = counts[class_min]
-        print("Equalizing classes to {} with count {}".format(class_min, count_min))
+        self.data = class_indices
+        if self.balance_classes:
+            class_min = np.argmin(counts)
+            count_min = counts[class_min]
+            print("Balancing classes to {} with count {}".format(class_min, count_min))
 
-        new_indices = []
-        for cat_idx, cnt in enumerate(counts):
-            indices = np.array([[idx, cat_] for [idx, cat_] in class_indices if cat_ == class_ids[cat_idx]])
-            stride = np.round(cnt / count_min)
-            stride = int(stride)
-            indices = indices[::stride]
-            new_indices += indices.tolist()
-        new_indices = np.array(new_indices)
-        class_ids_new, counts = np.unique(new_indices[:,1], return_counts=True)
-        for i, c in enumerate(counts):
-            print("Class {} counts: {} ({}%)".format(i, c, np.round(c / new_indices.shape[0], 3) * 100))
-        assert np.all(class_ids == class_ids_new), "equalizing srewed class ids!!"
-        self.data = new_indices
+            new_indices = []
+            for cat_idx, cnt in enumerate(counts):
+                indices = np.array([[idx, cat_] for [idx, cat_] in class_indices if cat_ == class_ids[cat_idx]])
+                stride = np.round(cnt / count_min)
+                stride = int(stride)
+                indices = indices[::stride]
+                new_indices += indices.tolist()
+            new_indices = np.array(new_indices)
+            class_ids_new, counts = np.unique(new_indices[:,1], return_counts=True)
+            for i, c in enumerate(counts):
+                print("Class {} counts: {} ({}%)".format(i, c, np.round(c / new_indices.shape[0], 3) * 100))
+            assert np.all(class_ids == class_ids_new), "equalizing srewed class ids!!"
+            self.data = new_indices
     
     def __csv_only_return__(self, index):
         """
@@ -225,13 +227,19 @@ class TC_Dataloader(BaseDataset):
         
         X = np.asarray(self.df.iloc[start:stop, :-1], dtype=np.float32)
         X = torch.from_numpy(X)
-
+          
+        
         Y_class = label2idx(Y, scale=self.scale)
         Y_order = order_representation(Y_class, scale=self.scale)
 
-        if self.augment_data and np.random.rand() > 0.5:
-            i = np.random.randint(30, self.sequence_size + 1)
-            X[i:, :] = -1.0 # randomly set values to zero.
+        if self.augment_data:
+            if np.random.rand() > 0.5:
+                X += torch.randn_like(X) * 0.2
+                X = torch.clamp(X, 0, 1)
+
+            if np.random.rand() > 0.5:
+                i = np.random.randint(30, self.sequence_size + 1)
+                X[i:, :] = -1.0 # randomly set values to -1.
 
         return X, Y_class, Y_order
     

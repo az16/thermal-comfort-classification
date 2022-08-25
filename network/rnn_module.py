@@ -7,7 +7,8 @@ from network.learning_models import RNN
 
 from dataloaders.path import *
 from dataloaders.utils import class2order, order2class
-from metrics import OrderAccuracy, Accuracy
+from metrics import Accuracy
+from torchmetrics import Accuracy as TopKAccuracy
 
 """
     The training module for the LSTM architecture is defined here. If LSTM training is supposed to be adjusted, change this.
@@ -68,7 +69,7 @@ class TC_RNN_Module(pl.LightningModule):
         self.wce = WeightedCrossEntropyLoss(self.opt.num_categories, self.opt.use_weighted_loss)
         self.mse = torch.nn.MSELoss()
         self.accuracy = Accuracy()
-        self.order_acc = OrderAccuracy() 
+        self.top2 = TopKAccuracy(num_classes=self.opt.num_categories, top_k=2)
                 
         self.model = RNN(self.opt.num_features, self.opt.num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
 
@@ -109,12 +110,12 @@ class TC_RNN_Module(pl.LightningModule):
         mse = self.mse(pred_order, y_order)
 
         accuracy = self.accuracy(pred_class, y_class)
-        order_acc = self.order_acc(pred_order, y_order)
+        top2 = self.top2(pred_class, y_class)
 
         results = {
             "loss": loss,
             "acc": accuracy,
-            "order_acc": order_acc,
+            "acc_top2": top2,
             "wce": wce, 
             "mse": mse            
             }

@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--loss', default='wce', type=str, help='Loss function to use.')
     parser.add_argument('--latent_size', default=64, type=int, help='Latent vector size.')
     parser.add_argument('--patience', default=-1, type=int, help="Early stopping patience.")
+    parser.add_argument('--balance', default=1, type=int, help="Balance classes.")
     
     
     
@@ -103,18 +104,20 @@ if __name__ == "__main__":
             })
     
 
-    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="training", preprocess=args.preprocess, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=7),
+    train_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, balance_classes=args.balance, split="training", preprocess=args.preprocess, data_augmentation=args.data_augmentation, sequence_size=args.sequence_window, cols=args.columns, downsample=args.skiprows, scale=7),
                                                     batch_size=args.batch_size, 
                                                     shuffle=True, 
                                                     num_workers=args.worker, 
                                                     pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, split="validation", preprocess=True, data_augmentation=False, sequence_size=30, cols=args.columns, downsample=5, scale=7),
+    val_loader = torch.utils.data.DataLoader(TC_Dataloader(args.dataset_path, balance_classes=False, split="validation", preprocess=True, data_augmentation=False, sequence_size=30, cols=args.columns, downsample=10, scale=7),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=args.worker, 
                                                 pin_memory=True)     
     
     args.cols = train_loader.dataset.columns
+    args.class_weights = train_loader.dataset.class_weights
+    print(args.class_weights)
     model = TC_RNN_Module(args)
     
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
