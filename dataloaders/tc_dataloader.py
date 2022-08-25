@@ -96,14 +96,14 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names =  [] #os.listdir(Path.db_root_dir("tcs"))
+        file_names =  [] #os.listdir(self.root)
         with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
             lines = file.readlines()
             file_names = [line.rstrip() for line in lines]
-        assert len(file_names) > 0; "No files found at {0}".format(Path.db_root_dir("tcs"))
+        assert len(file_names) > 0; "No files found at {0}".format(self.root)
             
-        file_names = [Path.db_root_dir("tcs")+x for x in file_names]
-        print("Found {0} {1} files at {2}".format(len(file_names),self.split,Path.db_root_dir("tcs")))
+        file_names = [self.root+x for x in file_names]
+        print("Found {0} {1} files at {2}".format(len(file_names),self.split,self.root))
         
         # train_limit = int(len(file_names)*0.6)
         # val_size = int((len(file_names)-train_limit)*0.5)
