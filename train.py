@@ -45,6 +45,8 @@ if __name__ == "__main__":
     parser.add_argument('--forecasting',  type=int, default=0, help='Use forecasting labels.')
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     parser.add_argument('--wandb', action='store_true', help="User Weights and Biases Logger.")
+    parser.add_argument('--dataset_path', type=str, required=True, help="Path to dataset.")
+
     
     args = parser.parse_args()
 
@@ -112,9 +114,9 @@ if __name__ == "__main__":
     # choose module with respective network architecture here based on parser argument
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
     tc_module = None 
-    if args.module == "regression": tc_module = TC_MLP_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, preprocessing, augmentation)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale)
-    elif args.module == "rcnn": tc_module = TC_RCNN_Module(Path.db_root_dir("tcs"), args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path, preprocessing, augmentation, args.skiprows, scale=args.scale) 
+    if args.module == "regression": tc_module = TC_MLP_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, preprocessing, augmentation)
+    elif args.module == "rnn": tc_module = TC_RNN_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale)
+    elif args.module == "rcnn": tc_module = TC_RCNN_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path, preprocessing, augmentation, args.skiprows, scale=args.scale) 
     print(args)
     print("Using {0} lightning module.".format(args.module.upper()))
     #print(tc_module)
