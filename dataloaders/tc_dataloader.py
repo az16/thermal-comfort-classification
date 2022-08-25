@@ -384,7 +384,7 @@ class TC_Dataloader(BaseDataset):
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
 
-        if self.augment_data:
+        if self.augment_data and np.random.rand() > 0.5:
             out += torch.randn_like(out) * 0.02
          
         return out, label#.type(torch.LongTensor)
