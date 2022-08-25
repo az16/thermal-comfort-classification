@@ -182,13 +182,6 @@ class TC_Dataloader(BaseDataset):
             #    self.df["pmv_index"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["PCE-Ambient-Temp"], self.df["Ambient_Humidity"])
             
             #normalize where necessary
-        if self.augment_data:
-            print("Augmenting data..")
-            for key in self.columns:
-                if key in numeric_safe:
-                    #if not (self.use_col_as_label and self.col_label == key):
-                    #print(noise(self.df[key].shape))
-                    self.df[key] = self.df[key] + noise(self.df[key].shape)
 
         if self.continuous_labels:
             print("Using continuous labels.")
@@ -390,6 +383,9 @@ class TC_Dataloader(BaseDataset):
                 last_sequence_line = torch.unsqueeze(out[-1], dim=0)
                 for i in range(0,pad_range):
                     out = torch.cat((out,last_sequence_line), dim=0) 
+
+        if self.augment_data:
+            out += torch.randn_like(out) * 0.02
          
         return out, label#.type(torch.LongTensor)
     
