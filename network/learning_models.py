@@ -41,33 +41,33 @@ class MLP(nn.Module):
         return torch.squeeze(x, dim=1)
 
 class RNN(nn.Module):
-    def __init__(self, num_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2, latent_size=64):
+    def __init__(self, num_features, num_classes, n_layers=1, hidden_dim=256, dropout=0.2):
         super(RNN, self).__init__()
         """
         LSTM classifier without activation layer
         """
-        self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        self.fc1 = nn.Sequential(
-            nn.Linear(hidden_dim, latent_size),
-            nn.BatchNorm1d(latent_size),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(latent_size, latent_size * 2),
-            nn.BatchNorm1d(latent_size * 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(latent_size * 2, latent_size * 4)
-        )
-        self.fc2 = nn.Linear(latent_size * 4, num_classes)
+        self.n_layers = n_layers
+        self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True)
+        self.dp_layer = nn.Dropout(dropout)
+        if n_layers > 1:
+            self.lstm = self.lstm = nn.LSTM(num_features, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.fc1 = nn.Linear(hidden_dim, hidden_dim//2)
+        self.fc2 = nn.Linear(hidden_dim//2, num_classes)
+        self.activation = nn.Sigmoid()
         
     def forward(self, x):
-        self.lstm.flatten_parameters()
-        feat, _ = self.lstm(x)
+        #print(x.shape)
+        self.lstm.flatten_parameters() #use multi GPU capabilities
+        feat, (h_t, s_t) = self.lstm(x)
         x = feat[:, -1]
+        if self.n_layers == 1:
+            x = self.dp_layer(x)
         x = self.fc1(x)
+        x = self.dp_layer(x)
         x = self.fc2(x)
+        x = self.activation(x)
       
-        return x
+        return x #x.float()
     
 
 class Discretizer(nn.Module):

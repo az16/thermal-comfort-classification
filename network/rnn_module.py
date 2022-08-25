@@ -7,7 +7,7 @@ from network.learning_models import RNN
 
 from dataloaders.path import *
 from dataloaders.utils import class2order, order2class
-from metrics import Accuracy
+from torchmetrics import Accuracy
 from torchmetrics import Accuracy as TopKAccuracy
 
 """
@@ -68,10 +68,10 @@ class TC_RNN_Module(pl.LightningModule):
 
         self.wce = WeightedCrossEntropyLoss(self.opt.num_categories, self.opt.use_weighted_loss)
         self.mse = torch.nn.MSELoss()
-        self.accuracy = Accuracy()
+        self.accuracy = Accuracy(num_classes=self.opt.num_categories)
         self.top2 = TopKAccuracy(num_classes=self.opt.num_categories, top_k=2)
                 
-        self.model = RNN(self.opt.num_features, self.opt.num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout, latent_size=self.opt.latent_size)
+        self.model = RNN(self.opt.num_features, self.opt.num_categories, hidden_dim=self.opt.hidden, n_layers=self.opt.layers, dropout=self.opt.dropout)
 
         
     def configure_optimizers(self):
@@ -99,15 +99,11 @@ class TC_RNN_Module(pl.LightningModule):
         if self.opt.loss == 'wce':
             loss = self.wce(y_hat, y_class)
             pred_class = y_hat
-            pred_order = class2order(y_hat)            
         elif self.opt.loss == 'mse':
-            y_hat = y_hat.sigmoid()
             loss = self.mse(y_hat, y_order)
             pred_class = order2class(y_hat)
-            pred_order = y_hat
 
         wce = self.wce(pred_class, y_class)
-        mse = self.mse(pred_order, y_order)
 
         accuracy = self.accuracy(pred_class, y_class)
         top2 = self.top2(pred_class, y_class)
@@ -117,7 +113,6 @@ class TC_RNN_Module(pl.LightningModule):
             "acc": accuracy,
             "acc_top2": top2,
             "wce": wce, 
-            "mse": mse            
             }
 
         self.log_metrics(B, results, name)
@@ -145,10 +140,8 @@ class TC_RNN_Module(pl.LightningModule):
 
         if self.opt.loss == 'wce':
             pred_class = y_hat
-            pred_order = class2order(y_hat)            
         elif self.opt.loss == 'mse':
             y_hat = y_hat.sigmoid()
             pred_class = order2class(y_hat)
-            pred_order = y_hat
 
         return y_class, pred_class
