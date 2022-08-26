@@ -400,6 +400,7 @@ def make_mask(list_of_masks):
         Args:
             list_of_masks: the list of masks to be concatenated
     """
+    if len(list_of_masks) == 1: return list_of_masks[0]
     init = np.logical_and(list_of_masks[0], list_of_masks[1])
     if len(list_of_masks) > 2:
         for mask in list_of_masks:

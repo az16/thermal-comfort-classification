@@ -387,7 +387,7 @@ class TC_Dataloader(BaseDataset):
         if self.augment_data and np.random.rand() > 0.5:
             out += torch.randn_like(out) * 0.02
          
-        return out, label#.type(torch.LongTensor)
+        return out.float(), label.float()#.type(torch.LongTensor)
     
     
     def __len__(self):
@@ -404,3 +404,8 @@ class TC_Dataloader(BaseDataset):
     
     
 
+if __name__ == '__main__':
+    dataset = TC_Dataloader("dataset/", "validation", sequence_size=30, downsample=10, preprocess=True, cols=[11,28,30,33], scale=7, use_sequence=True)
+    for d in dataset:
+        print(d)
+        break
