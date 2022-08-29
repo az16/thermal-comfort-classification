@@ -7,6 +7,9 @@ from metrics import rmse, mae, compute_confusion_matrix
 from metrics import Accuracy, MAELoss
 from multiprocessing import cpu_count
 import numpy as np
+from dataloaders.ashrae import ASHRAE_Dataloader
+from dataloaders.utils import order2class, class7To3, class7To2
+from torchmetrics import Accuracy as TopK
 
 """
     The training module for the MLP architecture is defined here. If MLP training is supposed to be adjusted, change this.
@@ -14,7 +17,7 @@ import numpy as np
 gpu_mode=False
 
 class TC_MLP_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, forecasting, scale, dataset, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
@@ -22,20 +25,26 @@ class TC_MLP_Module(pl.LightningModule):
         self.label_names = ["-3", "-2", "-1", "0", "1", "2", "3"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip),
+        if dataset == "thermal_comfort":
+            DataLoader = TC_Dataloader
+        elif dataset == "ashrae":
+            DataLoader = ASHRAE_Dataloader
+        else:
+            raise ValueError(dataset)
+        self.train_loader = torch.utils.data.DataLoader(DataLoader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
-                                                    num_workers=cpu_count(), 
+                                                    num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.val_loader = torch.utils.data.DataLoader(DataLoader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=1, 
                                                     shuffle=False, 
-                                                    num_workers=cpu_count(), 
+                                                    num_workers=worker, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask),
+        self.test_loader = torch.utils.data.DataLoader(DataLoader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                 batch_size=1, 
-                                                shuffle=True, 
-                                                num_workers=cpu_count(), 
+                                                shuffle=False, 
+                                                num_workers=worker, 
                                                 pin_memory=True)
         #self.pmv_results = PMV_Results()
         self.classification_loss = False
@@ -45,6 +54,11 @@ class TC_MLP_Module(pl.LightningModule):
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
+        self.accuracy = TopK(num_classes=7)
+        self.accuracy_3 = TopK(num_classes=3)
+        self.accuracy_2 = TopK(num_classes=2)
+        self.l1 = torch.nn.L1Loss()
+        self.mse = torch.nn.MSELoss()
         self.train_preds = []
         self.train_labels = []
         self.val_preds = []
@@ -110,7 +124,6 @@ class TC_MLP_Module(pl.LightningModule):
                 batch: the current training batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -121,21 +134,17 @@ class TC_MLP_Module(pl.LightningModule):
         else: y = y.float()
         #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_train(y_hat, y)
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
+
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
-        # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        #print(int(preds[0]))
-        # # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[int(preds[0])])
-        self.train_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
     
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, name="val"):
         """
             Defines what happens during one validation step.
             
@@ -143,7 +152,6 @@ class TC_MLP_Module(pl.LightningModule):
                 batch: the current validation batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -154,59 +162,24 @@ class TC_MLP_Module(pl.LightningModule):
         else: y = y.float()
         # print(y_hat)
         # print(y)
-        loss = self.criterion(y_hat, y)
-        accuracy = self.acc_val(y_hat, y)
-        self.log("val_loss", loss, prog_bar=True, logger=True)
-        self.log("val_acc", accuracy, prog_bar=True, logger=True)
-       
+        mse = self.mse(y_hat, y)
+        l1  = self.l1(y_hat, y)
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
+        accuracy2 = self.accuracy_2(class7To2(y_hat_class_label), class7To2(y_class_label))
+        accuracy3 = self.accuracy_3(class7To3(y_hat_class_label), class7To3(y_class_label))
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        self.val_preds.append(self.label_names[int(preds[0])])
-        self.val_labels.append(self.label_names[int(y[0])])
-        
-        return {"loss": loss}
-        
-    def on_validation_end(self):
-        """
-            Defines what happens after validation is done for one epoch.
-        """
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
-        
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        if gpu_mode: x, y = x.cuda(), y.cuda()
-        
-        y_hat = torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
-        if gpu_mode: y_hat = y_hat.cuda()  
-        if self.classification_loss:
-            y = y.long()
-        loss = self.criterion(y_hat, y)
-        # preds = torch.argmax(y_hat, dim=1)
-        # self.acc_train(preds, y)
-        # accuracy = self.acc_train.compute()
-        self.log("test_loss", loss, prog_bar=True, logger=True)
-        self.log("test_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        self.log("test_mae", mae(y_hat, y), prog_bar=True, logger=True)
-        
-        return {"loss": loss}
-    
-    def prepare_cfm_data(self, preds, y):
-        """
-            This method is used to convert predictions and labels to a representation
-            that can be turned into a confusion matrix.
-            
-            Args:
-                preds: the model predictions
-                y: the labels
-        """
-        preds = torch.sum(torch.round(preds.cpu()), dim=1)
-        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
-        # print(preds)
-        # print(torch.round(preds))
-        #preds = torch.round(preds)
-        y = torch.sum(y.cpu().long(), dim=1)
-        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
-        return preds, y
+        self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
+        self.log("{}_l1".format(name), l1, prog_bar=True, logger=True)
+        self.log("{}_accuracy".format(name), accuracy, prog_bar=True, logger=True)
+        self.log("{}_accuracy3".format(name), accuracy3, prog_bar=True, logger=True)
+        self.log("{}_accuracy2".format(name), accuracy2, prog_bar=True, logger=True)
+        return {
+            "{}_mse".format(name): mse,
+            "{}_l1".format(name): l1,
+            "{}_accuracy7".format(name): accuracy,
+            "{}_accuracy3".format(name): accuracy3,
+            "{}_accuracy2".format(name): accuracy2,
+            }

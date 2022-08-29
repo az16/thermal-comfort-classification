@@ -65,12 +65,13 @@ N_TRAIN = 30000
 N_VALID = 1505
 
 class ASHRAE_Dataloader(Dataset):
-    def __init__(self, path, cols, scale, split, *args, **kwargs) -> None:
+    def __init__(self, path, cols, scale, split, data_augmentation=False, *args, **kwargs) -> None:
         super().__init__()
         self.split = split
         self.path = Path(path)
         self.cols = [HEADER(c) for c in cols]
         self.scale = scale
+        self.data_augmentation = data_augmentation
         self.load_csv()
         self.preprocess()
         print("Found {} entries for split {}.".format(len(self.data), self.split))
@@ -114,6 +115,10 @@ class ASHRAE_Dataloader(Dataset):
         label = label2idx(label, scale=self.scale)
         label = order_representation(label, scale=self.scale)
         Y = torch.from_numpy(label)
+
+        if self.data_augmentation and np.random.rand() > 0.5:
+            X += torch.randn_like(X) * 0.02
+
         return X, Y
 
 

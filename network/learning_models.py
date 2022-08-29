@@ -18,16 +18,18 @@ class MLP(nn.Module):
         
         print(input_size)
         self.layers = nn.Sequential(
-            nn.Linear(input_size, input_size*2),
+            nn.Linear(input_size, 64),
+            #nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(64, 128),
+            #nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(128, 128),
             #nn.BatchNorm1d(num_features=10),
             nn.ReLU(),
-            nn.Linear(input_size*2, input_size*2),
-            #nn.BatchNorm1d(num_features=10),
-            nn.ReLU(),
-            nn.Linear(input_size*2, input_size*2),
-            #nn.BatchNorm1d(num_features=10),
-            nn.ReLU(),
-            nn.Linear(input_size*2, num_categories),
+            nn.Linear(128, num_categories),
             nn.Sigmoid()
         )
         # self.input_layer = nn.Linear(input_size, input_size*2)
