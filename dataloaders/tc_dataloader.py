@@ -1,7 +1,4 @@
-from msilib.schema import Feature
-from sklearn.feature_extraction import img_to_graph
 from dataloaders.dataset import *
-from dataloaders.path import Path
 from tqdm import tqdm
 from dataloaders.utils import *
 from PIL import Image
