@@ -136,11 +136,9 @@ class TC_RNN_Module(pl.LightningModule):
         if batch_idx == 0: self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
-        
-        y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
-        print("pred ", y_hat)
-        print("y ", y)
 
+        y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
+       
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()

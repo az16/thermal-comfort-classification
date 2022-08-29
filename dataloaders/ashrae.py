@@ -60,14 +60,20 @@ class HEADER(Enum):
     HUMIDITY_PREFERENCE   = 50
     HUMIDITY_SENSATION    = 51
 
+N = 31505
+N_TRAIN = 30000
+N_VALID = 1505
+
 class ASHRAE_Dataloader(Dataset):
-    def __init__(self, path, cols, scale, *args, **kwargs) -> None:
+    def __init__(self, path, cols, scale, split, *args, **kwargs) -> None:
         super().__init__()
+        self.split = split
         self.path = Path(path)
         self.cols = [HEADER(c) for c in cols]
         self.scale = scale
         self.load_csv()
         self.preprocess()
+        print("Found {} entries for split {}.".format(len(self.data), self.split))
 
     def load_csv(self):
         self.data = []
@@ -81,7 +87,6 @@ class ASHRAE_Dataloader(Dataset):
                 if "NA" in row: continue
                 self.data.append(row)
         self.data = np.asarray(self.data).astype(np.float32)
-        print("Found {} entries.".format(len(self.data)))
 
     def preprocess(self):
         minimum = np.min(self.data, axis=0)
@@ -89,6 +94,13 @@ class ASHRAE_Dataloader(Dataset):
         self.data[:, 0:-1] = (self.data[:, 0:-1] - minimum[0:-1]) / (maximum[0:-1] - minimum[0:-1])
 
         print(np.histogram(np.rint(self.data[:, -1]), bins=[-3, -2, -1, 0, 1, 2, 3]))
+        if self.split == "training":
+            self.data = self.data[0:N_TRAIN]
+        elif self.split == "validation":
+            self.data = self.data[N_TRAIN:]
+        else:
+            self.data = self.data[N_TRAIN:]
+
         
 
     def __len__(self):
@@ -96,7 +108,7 @@ class ASHRAE_Dataloader(Dataset):
 
     def __getitem__(self, index):
         dp = self.data[index]
-        X = torch.from_numpy(dp[0:-1])
+        X = torch.from_numpy(dp[0:-1]).unsqueeze(0)
         label = np.rint(dp[-1])
 
         label = label2idx(label, scale=self.scale)
