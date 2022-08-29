@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--wandb', action='store_true', help="User Weights and Biases Logger.")
     parser.add_argument('--dataset_path', type=str, required=True, help="Path to dataset.")
     parser.add_argument('--run', type=int, default=None, help="Run index for crossvalidation.")
+    parser.add_argument('--dataset', type=str, default="thermal_comfort", help="Run index for crossvalidation.")
 
     
     args = parser.parse_args()
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     assert not args.module == ''; "Pass the module you would like to use as a parser argument to commence training." 
     tc_module = None 
     if args.module == "regression": tc_module = TC_MLP_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, preprocessing, augmentation)
-    elif args.module == "rnn": tc_module = TC_RNN_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale)
+    elif args.module == "rnn": tc_module = TC_RNN_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, preprocessing, augmentation, args.skiprows, args.forecasting, scale=args.scale, dataset=args.dataset)
     elif args.module == "rcnn": tc_module = TC_RCNN_Module(args.dataset_path, args.batch_size, args.learning_rate, args.worker, args.metrics, sequence_based, args.sequence_window, args.columns, args.gpus, args.dropout, args.hidden, args.layers, args.image_path, preprocessing, augmentation, args.skiprows, scale=args.scale) 
     print(args)
     print("Using {0} lightning module.".format(args.module.upper()))

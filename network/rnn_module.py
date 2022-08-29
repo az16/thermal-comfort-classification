@@ -6,6 +6,7 @@ import torch
 import pytorch_lightning as pl
 from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
+from dataloaders.ashrae import ASHRAE_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
 from dataloaders.utils import order2class, class7To3, class7To2
@@ -17,7 +18,7 @@ from torchmetrics import Accuracy as TopK
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, forecasting, scale, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, forecasting, scale, dataset, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
@@ -30,17 +31,23 @@ class TC_RNN_Module(pl.LightningModule):
             self.label_names = ["-1", "0", "1"]
         
         mask = self.convert_to_list(cols)
-        self.train_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
+        if dataset == "thermal_comfort":
+            DataLoader = TC_Dataloader
+        elif dataset == "ashrae":
+            DataLoader = ASHRAE_Dataloader
+        else:
+            raise ValueError(dataset)
+        self.train_loader = torch.utils.data.DataLoader(DataLoader(path, split="training", preprocess=preprocess, use_sequence=get_sequence_wise, data_augmentation=augmentation, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=batch_size, 
                                                     shuffle=True, 
                                                     num_workers=worker, 
                                                     pin_memory=True)
-        self.val_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
+        self.val_loader = torch.utils.data.DataLoader(DataLoader(path, split="validation", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                     batch_size=1, 
                                                     shuffle=False, 
                                                     num_workers=worker, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
+        self.test_loader = torch.utils.data.DataLoader(DataLoader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                 batch_size=1, 
                                                 shuffle=False, 
                                                 num_workers=worker, 
@@ -131,6 +138,9 @@ class TC_RNN_Module(pl.LightningModule):
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
         y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
+        print("pred ", y_hat)
+        print("y ", y)
+
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()

@@ -375,10 +375,6 @@ class TC_Dataloader(BaseDataset):
             out = torch.from_numpy(np.array(self.df.iloc[index:limit, :-1]))
             # print(out.shape)
 
-            if not self.use_col_as_label:
-                label = label2idx(label, scale = self.scale)
-                label = order_representation(label, scale=self.scale)
-                label = torch.from_numpy(label)
             #handles padding in case sequence from file end is taken
             if out.shape[0] < self.sequence_size:
                 #print(out.shape, index, (x,limit))
@@ -389,6 +385,11 @@ class TC_Dataloader(BaseDataset):
 
         if self.augment_data and np.random.rand() > 0.5:
             out += torch.randn_like(out) * 0.02
+
+        if not self.use_col_as_label:
+            label = label2idx(label, scale = self.scale)
+            label = order_representation(label, scale=self.scale)
+            label = torch.from_numpy(label)
          
         return out.float(), label.float()#.type(torch.LongTensor)
     
