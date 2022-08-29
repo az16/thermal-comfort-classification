@@ -697,3 +697,17 @@ def class2order(c):
     for b,idx in enumerate(class_idx):
         order_rep[b, idx+1:] = 0
     return order_rep.to(c)
+
+def class7To3(v):
+    vec = torch.clone(v)
+    vec[vec<=2] = 0
+    vec[vec==3] = 1
+    vec[vec>=4] = 2
+    return vec
+
+def class7To2(v):
+    vec = torch.clone(v)
+    mask = vec>=3
+    vec[mask] = 0
+    vec[~mask] = 1
+    return vec

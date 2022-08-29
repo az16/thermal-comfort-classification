@@ -1,3 +1,4 @@
+from msilib.schema import Feature
 from sklearn.feature_extraction import img_to_graph
 from dataloaders.dataset import *
 from dataloaders.path import Path
@@ -41,9 +42,10 @@ class TC_Dataloader(BaseDataset):
     Args:
         BaseDataset (Dataset): loads and splits dataset
     """
-    def __init__(self, root, split, scale=7, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
+    def __init__(self, root, split, run=None, scale=7, downsample=None, preprocess=None, use_sequence=False, sequence_size=10, crop_size=(1000, 1000),output_size=(224, 224), continuous_labels=False, data_augmentation=False, cols=None, image_path=None, use_imgs=False, label_col=None, forecasting=0):
         self.split = split 
         self.root = root 
+        self.run = run
         self.forecasting = forecasting
         self.scale = scale
         self.preprocessing_config = preprocess #bool or dict of bools that define which signals to preprocess
@@ -97,7 +99,11 @@ class TC_Dataloader(BaseDataset):
         #find files
         print("Searching for {0} files..".format(self.split))
         file_names =  [] #os.listdir(self.root)
-        with open("./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)) as file:
+        split_file = "./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)
+        if not self.run is None:
+            split_file = "./dataloaders/splits/{0}_indices_{1}.txt".format(self.split, self.run)
+
+        with open(split_file) as file:
             lines = file.readlines()
             file_names = [line.rstrip() for line in lines]
         assert len(file_names) > 0; "No files found at {0}".format(self.root)
@@ -405,7 +411,19 @@ class TC_Dataloader(BaseDataset):
     
 
 if __name__ == '__main__':
-    dataset = TC_Dataloader("dataset/", "validation", sequence_size=30, downsample=10, preprocess=True, cols=[11,28,30,33], scale=7, use_sequence=True)
-    for d in dataset:
-        print(d)
-        break
+    #indices = np.arange(19)
+    #with open("dataloaders/splits/all.txt", "r") as txtfile:
+    #    all_participants = [line.strip() for line in txtfile.readlines()]
+    #
+    #for i in range(20):
+    #    train_indices = sorted(np.random.choice(indices, 16, replace=False))
+    #    remaining = [idx for idx in indices if not idx in train_indices]
+    #    val_indices = sorted(np.random.choice(remaining, 2, replace=False))
+    #    test_indices = [idx for idx in remaining if not idx in val_indices]
+    #    with open("dataloaders/splits/training_indices_{}.txt".format(i), "w") as txtfile:
+    #        txtfile.writelines([all_participants[idx] + "\n" for idx in train_indices])
+    #    with open("dataloaders/splits/validation_indices_{}.txt".format(i), "w") as txtfile:
+    #        txtfile.writelines([all_participants[idx] + "\n" for idx in val_indices])
+    #    with open("dataloaders/splits/test_indices_{}.txt".format(i), "w") as txtfile:
+    #        txtfile.writelines([all_participants[idx] + "\n" for idx in test_indices])
+    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[11,31,32,33])

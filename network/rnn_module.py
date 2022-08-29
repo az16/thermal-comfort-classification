@@ -8,7 +8,7 @@ from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
-from dataloaders.utils import order2class
+from dataloaders.utils import order2class, class7To3, class7To2
 from torchmetrics import Accuracy as TopK
 
 """
@@ -40,9 +40,9 @@ class TC_RNN_Module(pl.LightningModule):
                                                     shuffle=False, 
                                                     num_workers=worker, 
                                                     pin_memory=True) 
-        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, forecasting=forecasting),
+        self.test_loader = torch.utils.data.DataLoader(TC_Dataloader(path, split="test", preprocess=preprocess, use_sequence=get_sequence_wise, sequence_size=sequence_size, cols=mask, downsample=skip, forecasting=forecasting, scale=scale),
                                                 batch_size=1, 
-                                                shuffle=True, 
+                                                shuffle=False, 
                                                 num_workers=worker, 
                                                 pin_memory=True)
         #self.pmv_results = PMV_Results()
@@ -53,7 +53,11 @@ class TC_RNN_Module(pl.LightningModule):
         self.acc_train = Accuracy()
         self.acc_val = Accuracy()
         self.acc_test = Accuracy()
-        self.top2 = TopK(num_classes=7, top_k=2)
+        self.accuracy = TopK(num_classes=7)
+        self.accuracy_3 = TopK(num_classes=3)
+        self.accuracy_2 = TopK(num_classes=2)
+        self.l1 = torch.nn.L1Loss()
+        self.mse = torch.nn.MSELoss()
         self.train_preds = []
         self.train_labels = []
         self.val_preds = []
@@ -158,12 +162,28 @@ class TC_RNN_Module(pl.LightningModule):
             y = y.long()
         else: y = y.float()
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_val(y_hat, y)
-        top2 = self.top2(order2class(y_hat), torch.argmax(order2class(y), dim=-1))
-        self.log("{}_loss".format(name), loss, prog_bar=True, logger=True)
-        self.log("{}_acc".format(name), accuracy, prog_bar=True, logger=True)
-        self.log("{}_top2".format(name), top2, prog_bar=True, logger=True)       
-        return {"loss": loss}
+        mse = self.mse(y_hat, y)
+        l1  = self.l1(y_hat, y)
+
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
+        accuracy2 = self.accuracy_2(class7To2(y_hat_class_label), class7To2(y_class_label))
+        accuracy3 = self.accuracy_3(class7To3(y_hat_class_label), class7To3(y_class_label))
+        
+        self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
+        self.log("{}_l1".format(name), l1, prog_bar=True, logger=True)
+        self.log("{}_accuracy".format(name), accuracy, prog_bar=True, logger=True)
+        self.log("{}_accuracy3".format(name), accuracy3, prog_bar=True, logger=True)
+        self.log("{}_accuracy2".format(name), accuracy2, prog_bar=True, logger=True)
+        return {
+            "{}_mse".format(name): mse,
+            "{}_l1".format(name): l1,
+            "{}_accuracy7".format(name): accuracy,
+            "{}_accuracy3".format(name): accuracy3,
+            "{}_accuracy2".format(name): accuracy2,
+            }
 
     def test_step(self, batch, batch_idx):
         return self.validation_step(batch, batch_idx, "test")

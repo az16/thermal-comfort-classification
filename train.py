@@ -46,6 +46,7 @@ if __name__ == "__main__":
     parser.add_argument('--scale',  type=int, default=7, help='Use forecasting labels.')
     parser.add_argument('--wandb', action='store_true', help="User Weights and Biases Logger.")
     parser.add_argument('--dataset_path', type=str, required=True, help="Path to dataset.")
+    parser.add_argument('--run', type=int, default=None, help="Run index for crossvalidation.")
 
     
     args = parser.parse_args()
