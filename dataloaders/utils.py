@@ -577,6 +577,17 @@ def label2idx(label, scale=7):
     except:
         return np.array(label)
 
+def idx2label(idx):
+    label = torch.clone(idx)
+    label[label == 0] = -3
+    label[label == 1] = -2
+    label[label == 2] = -1
+    label[label == 3] = 0
+    label[label == 4] = 1
+    label[label == 5] = 2
+    label[label == 6] = 3
+    return label
+
 def order_representation(label, sklearn=False, scale=7):
     """
         Transforms labels to order representation after Cheng et al. (https://www.researchgate.net/publication/221533108_A_Neural_Network_Approach_to_Ordinal_Regression)
@@ -690,34 +701,33 @@ def order2class(o):
 
 def class2order(c):    
     c = c.detach()
-    if torch.sum(c[0]) - 1.0 > 1e-6: c=c.softmax(dim=1)
-    # c.shape (B, 7)
-    class_idx = torch.argmax(c, dim=1) # (B)
-    order_rep = torch.ones_like(c) # (B, 7)
+    if len(c.shape) > 1:
+        if torch.sum(c[0]) - 1.0 > 1e-6: 
+            c=c.softmax(dim=1)
+        # c.shape (B, 7)
+        class_idx = torch.argmax(c, dim=1) # (B)
+        order_rep = torch.ones_like(c) # (B, 7)
+    else:
+        class_idx = c
+        order_rep = torch.ones((len(c), 7)) # (B, 7)
     for b,idx in enumerate(class_idx):
         order_rep[b, idx+1:] = 0
     return order_rep.to(c)
 
 def class7To3(v):
     vec = torch.clone(v)
-    #vec[vec<=2] = 0
-    #vec[vec==3] = 1
-    #vec[vec>=4] = 2
-    vec[vec<-0.5]       = 0
-    vec[-0.5>=vec>=0.5] = 1
-    vec[vec>0.5]        = 2
+    vec[vec<=2] = 0
+    vec[vec==3] = 1
+    vec[vec>=4] = 2
     return vec
 
 def class7To2(v):
     vec = torch.clone(v)
-    #mask = vec>=3
-    #vec[mask] = 0
-    #vec[~mask] = 1
-    vec[vec ==  0] = 1
-    vec[vec == -3] = 0
-    vec[vec == -2] = 0
-    vec[vec == -1] = 1
-    vec[vec ==  1] = 1
-    vec[vec ==  2] = 0
-    vec[vec ==  3] = 0
+    vec[vec == 0] = 0
+    vec[vec == 1] = 0
+    vec[vec == 2] = 1
+    vec[vec == 3] = 1
+    vec[vec == 4] = 1
+    vec[vec == 5] = 0
+    vec[vec == 6] = 0
     return vec
