@@ -57,9 +57,6 @@ class TC_RNN_Module(pl.LightningModule):
         
         #self.criterion = torch.nn.CrossEntropyLoss()
         self.criterion = torch.nn.MSELoss()
-        self.acc_train = Accuracy()
-        self.acc_val = Accuracy()
-        self.acc_test = Accuracy()
         self.accuracy = TopK(num_classes=7)
         self.accuracy_3 = TopK(num_classes=3)
         self.accuracy_2 = TopK(num_classes=2)
@@ -133,19 +130,19 @@ class TC_RNN_Module(pl.LightningModule):
                 batch: the current training batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
-
+        
         y_hat = self(x)#torch.squeeze(torch.multiply(self(x), 3.0), dim=1)
-       
         if gpu_mode: y_hat = y_hat.cuda()  
         if self.classification_loss:
             y = y.long()
         else: y = y.float()
-        #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_train(y_hat, y)
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
         
@@ -160,7 +157,6 @@ class TC_RNN_Module(pl.LightningModule):
                 batch: the current validation batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         

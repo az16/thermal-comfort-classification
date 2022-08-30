@@ -7,6 +7,8 @@ from network.learning_models import RCNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
+from dataloaders.utils import order2class, class7To3, class7To2
+from torchmetrics import Accuracy as TopK
 
 """
     The training module for the CNN-LSTM architecture is defined here. If CNN-LSTM training is supposed to be adjusted, change this.
@@ -45,13 +47,11 @@ class TC_RCNN_Module(pl.LightningModule):
         self.classification_loss = False
         
         self.criterion = torch.nn.MSELoss()
-        self.acc_train = Accuracy()
-        self.acc_val = Accuracy()
-        self.acc_test = Accuracy()
-        self.train_preds = []
-        self.train_labels = []
-        self.val_preds = []
-        self.val_labels = []
+        self.accuracy = TopK(num_classes=7)
+        self.accuracy_3 = TopK(num_classes=3)
+        self.accuracy_2 = TopK(num_classes=2)
+        self.l1 = torch.nn.L1Loss()
+        self.mse = torch.nn.MSELoss()
         
         num_features = len(mask)-1 #-1 to neglect labels
         num_categories = scale #Cold, Cool, Slightly Cool, Comfortable, Slightly Warm, Warm, Hot
@@ -113,7 +113,6 @@ class TC_RCNN_Module(pl.LightningModule):
                 batch: the current training batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_train.reset(), self.train_preds.clear(), self.train_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -122,23 +121,18 @@ class TC_RCNN_Module(pl.LightningModule):
         if self.classification_loss:
             y = y.long()
         else: y = y.float()
-        #print(y_hat, y)
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_train(y_hat, y)
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
         self.log("train_loss", loss, prog_bar=True, logger=True)
         self.log("train_acc", accuracy, prog_bar=True, logger=True)
-        # self.log("train_rsme", rmse(y_hat, y), prog_bar=True, logger=True)
-        # self.log("train_mae", mae(y_hat, y), prog_bar=True, logger=True)
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        #print(int(preds[0]))
-        # # print(self.label_names[y[0]])
-        self.train_preds.append(self.label_names[int(preds[0])])
-        self.train_labels.append(self.label_names[int(y[0])])
         
         return {"loss": loss}
     
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, name="val"):
         """
             Defines what happens during one validation step.
             
@@ -146,7 +140,6 @@ class TC_RCNN_Module(pl.LightningModule):
                 batch: the current validation batch that is used
                 batch_idx: the id of the batch
         """
-        if batch_idx == 0: self.acc_val.reset(), self.val_preds.clear(), self.val_labels.clear()
         x, y = batch
         if gpu_mode: x, y = x.cuda(), y.cuda()
         
@@ -156,40 +149,38 @@ class TC_RCNN_Module(pl.LightningModule):
             y = y.long()
         else: y = y.float()
         loss = self.criterion(y_hat, y)
-        accuracy = self.acc_val(y_hat, y)
-        self.log("val_loss", loss, prog_bar=True, logger=True)
-        self.log("val_acc", accuracy, prog_bar=True, logger=True)
-       
+        mse = self.mse(y_hat, y)
+        l1  = self.l1(y_hat, y)
+
+        y_hat_class_label = torch.argmax(order2class(y_hat), dim=-1)
+        y_class_label    = torch.argmax(order2class(y), dim=-1)
+
+        accuracy = self.accuracy(y_hat_class_label, y_class_label)
+        accuracy2 = self.accuracy_2(class7To2(y_hat_class_label), class7To2(y_class_label))
+        accuracy3 = self.accuracy_3(class7To3(y_hat_class_label), class7To3(y_class_label))
         
-        preds, y = self.prepare_cfm_data(y_hat, y)
-        self.val_preds.append(self.label_names[int(preds[0])])
-        self.val_labels.append(self.label_names[int(y[0])])
+        self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
+        self.log("{}_l1".format(name), l1, prog_bar=True, logger=True)
+        self.log("{}_accuracy".format(name), accuracy, prog_bar=True, logger=True)
+        self.log("{}_accuracy3".format(name), accuracy3, prog_bar=True, logger=True)
+        self.log("{}_accuracy2".format(name), accuracy2, prog_bar=True, logger=True)
+        return {
+            "{}_mse".format(name): mse,
+            "{}_l1".format(name): l1,
+            "{}_accuracy7".format(name): accuracy,
+            "{}_accuracy3".format(name): accuracy3,
+            "{}_accuracy2".format(name): accuracy2,
+            }
+
+    def test_step(self, batch, batch_idx):
+        return self.validation_step(batch, batch_idx, "test")
+
+    def predict_step(self, batch, batch_idx):
+        x, y = batch
         
-        return {"loss": loss}
-        
-    def on_validation_end(self):
-        """
-            Defines what happens after validation is done for one epoch.
-        """
-        if len(self.train_preds) > 0:
-            compute_confusion_matrix(self.train_preds, self.train_labels, self.label_names, self.current_epoch, self, "Training")
-        if len(self.val_preds) > 0:
-            compute_confusion_matrix(self.val_preds, self.val_labels, self.label_names, self.current_epoch, self, "Validation")
-        
-    def prepare_cfm_data(self, preds, y):
-        """
-            This method is used to convert predictions and labels to a representation
-            that can be turned into a confusion matrix.
-            
-            Args:
-                preds: the model predictions
-                y: the labels
-        """
-        preds = torch.sum(preds.cpu(), dim=1)
-        preds = torch.add(preds, torch.multiply(torch.ones_like(preds), -1.0))
-        # print(preds)
-        # print(torch.round(preds))
-        preds = torch.round(preds)
-        y = torch.sum(y.cpu().long(), dim=1)
-        y = torch.add(y, torch.multiply(torch.ones_like(y), -1.0))
-        return preds, y
+        y_hat = self(x)
+
+        y_hat = order2class(y_hat)
+        y = order2class(y)
+
+        return y_hat, y
