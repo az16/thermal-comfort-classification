@@ -700,14 +700,24 @@ def class2order(c):
 
 def class7To3(v):
     vec = torch.clone(v)
-    vec[vec<=2] = 0
-    vec[vec==3] = 1
-    vec[vec>=4] = 2
+    #vec[vec<=2] = 0
+    #vec[vec==3] = 1
+    #vec[vec>=4] = 2
+    vec[vec<-0.5]       = 0
+    vec[-0.5>=vec>=0.5] = 1
+    vec[vec>0.5]        = 2
     return vec
 
 def class7To2(v):
     vec = torch.clone(v)
-    mask = vec>=3
-    vec[mask] = 0
-    vec[~mask] = 1
+    #mask = vec>=3
+    #vec[mask] = 0
+    #vec[~mask] = 1
+    vec[vec ==  0] = 1
+    vec[vec == -3] = 0
+    vec[vec == -2] = 0
+    vec[vec == -1] = 1
+    vec[vec ==  1] = 1
+    vec[vec ==  2] = 0
+    vec[vec ==  3] = 0
     return vec
