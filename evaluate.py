@@ -2,12 +2,12 @@ import pytorch_lightning as pl
 import torch
 from argparse import ArgumentParser
 from network.rnn_module import TC_RNN_Module
+from network.rcnn_module import TC_RCNN_Module
 
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from pathlib import Path
 import json
-from dataloaders.utils import header
 
 if __name__ == "__main__":
     import numpy as np
@@ -15,9 +15,17 @@ if __name__ == "__main__":
     parser = ArgumentParser('Evaluate model.')
     parser.add_argument('--ckpt', required=True)
     parser.add_argument('--path', required=True)
+    parser.add_argument('--module', required=True)
     parser.add_argument('--overwrite_valid', action='store_true')
 
     args = parser.parse_args()
+
+    if args.module == "rnn":
+        Module = TC_RNN_Module
+    elif args.module == "rcnn":
+        Module = TC_RCNN_Module
+    else:
+        raise NotImplementedError(args.module)
 
     checkpoints = []
     if Path(args.ckpt).is_file():
@@ -39,7 +47,7 @@ if __name__ == "__main__":
         
         if all([val_file.exists(), cm_file.exists()]) and not args.overwrite_valid: continue
         print("Evaluating ckpt: ", ckpt)
-        module = TC_RNN_Module.load_from_checkpoint(ckpt, scale=7, path=args.path, dataset="thermal_comfort")
+        module = Module.load_from_checkpoint(ckpt, scale=7, path=args.path, dataset="thermal_comfort")
 
         if ~val_file.exists() or args.overwrite_valid:
             val_result = trainer.validate(model=module)
