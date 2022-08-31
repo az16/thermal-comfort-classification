@@ -54,13 +54,14 @@ if __name__ == "__main__":
             ConfusionMatrixDisplay.from_predictions(gt, pred)
             plt.savefig(cm_file.as_posix())
 
-    
+    """
     data = {}
     for valid_file in valid_files:
         with open(valid_file, "r") as jsonfile:
             vdata = json.load(jsonfile)[0]
             data[valid_file.parents[1].name] = vdata
-    
+    """
+    """
     table = ["{GSR} & {AT} & {AH} & {RT} & {WS} & {val_acc:.1f}\% & {val_3_acc:.1f}\% & {val_2_acc:.1f}\% & {mse:.3f} & {l1:.3f}\\\\".format(
         GSR="X" if "GSR" in key else "", 
         AT="X" if "Ambient_Temperature" in key else "",
@@ -76,7 +77,7 @@ if __name__ == "__main__":
 
     for row in table:
         print(row)
-    
+    """
     
     """
     mean_val_acc  = np.mean([v['val_accuracy'] for v in data.values()])
