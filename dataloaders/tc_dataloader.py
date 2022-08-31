@@ -334,7 +334,7 @@ class TC_Dataloader(BaseDataset):
         # print(out)
         # print(label)
         # print(label.shape)
-        return (rgb_input, out.float()), label.long()#.type(torch.LongTensor)
+        return (rgb_input, out.float()), label.float()#.type(torch.LongTensor)
     
     def __csv_only_return__(self, index):
         """
