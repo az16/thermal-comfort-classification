@@ -43,7 +43,7 @@ def clf_tree(x,y,label_names, name):
     plt.xlabel('Predicted Label')
     #plt.figure(figsize=(15, 15))
     fig = m_val.get_figure()
-    fig.savefig("sklearn_logs/media/{0}.png".format(name))
+    fig.savefig("sklearn_logs/media/{0}.pdf".format(name))
     plt.close(fig)
 
 def cross_validate_local(x_splits_train, y_splits_train, x_splits_val, y_splits_val, feature_names=[]):
@@ -204,30 +204,22 @@ def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiatio
             mask (list, optional): the features to used. Defaults to ['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'].
     """
     model = RandomForest(cv=False)#RandomForest(cv=False)
-    dataset = TC_Dataloader(by_file=True) 
-    train_X, train_Y, val_X, val_Y, _, _ = dataset.splits()
-    #print(X.shape)
+    dataset = TC_Dataloader(full=True) 
+    X, Y = dataset.splits(mask=mask)
+    
     #print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
-    model.fit(train_X,train_Y)
+    #model.fit(train_X,train_Y)
     #preds = model.predict(val_X)
-    #print(val_Y)
-    #roc = roc_auc_score(val_Y, model.rf.predict_proba(val_X), multi_class='ovr')
-    #print("ROC score: {0}".format(roc))
-    #val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
-    #print(len(val_preds))
-    #print(val_preds)
-    #clf_tree(val_preds, Y, [0,1], "Test_x_Point")
-    #print("Top 0 accuracy: {0}".format(accuracy_score(preds, val_Y)))
-    # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
-    # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
-    feature_importance_imp = model.feature_importances()
-    feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
-    visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
-    visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
-    # RocCurveDisplay.from_estimator(model.rf, val_X, val_Y)
-    # plt.show()
-    #print(classification_report(val_Y, val_preds))
-    #print("MAE for validation: {0}".format(mean_absolute_error(val_preds, val_Y)))
+    
+    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
+    
+    clf_tree(val_preds, Y, labels, "Test_x_Point")
+    print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, Y)))
+    # feature_importance_imp = model.feature_importances()
+    # feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
+    # visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
+    # visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
+
 
 def sk_cross_validate():
     """
@@ -288,11 +280,7 @@ if __name__ == "__main__":
     #feature_selection(in_features=in_features)#, test=[["Ambient_Temperature","Ambient_Humidity","Radiation-Temp"]])
     #sk_feature_selection()
     #grid_search(params_grid)
-    fit_random_forest()
-    #downsampling_selection(params_grid)
-    #fit_random_forest()
-    #cross_validate_local(x_t, y_t, x_v, y_v, feature_names=dataset.independent)
-    #sk_cross_validate()
+    fit_random_forest() #fit random forest classifier using the cross validation function defined by sklearn
     
     
     

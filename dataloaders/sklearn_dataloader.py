@@ -210,7 +210,7 @@ class TC_Dataloader():
                 pre = self.train_df.shape[0]
                 self.train_df = remove_grouped_outliers(group='Label', col=key, df=self.train_df)
                 post = pre-self.train_df.shape[0]
-                print("Shape after cleaning {0}. Removed {1}.".format(self.train_df.shape, post))
+                #print("Shape after cleaning {0}. Removed {1}.".format(self.train_df.shape, post))
     
         masks = []
         for key in self.columns:
@@ -222,7 +222,7 @@ class TC_Dataloader():
             self.train_df = self.train_df.loc[full_mask, :]
         
         #print(self.train_df.shape)
-        self.train_df = self.narrow_labels(self.train_df)
+        #self.train_df = self.narrow_labels(self.train_df)
        
         self.train_df = self.train_df[self.train_df.index % 100== 0] 
         
