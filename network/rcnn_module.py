@@ -102,6 +102,9 @@ class TC_RCNN_Module(pl.LightningModule):
     def val_dataloader(self):
         return self.val_loader  
     
+    def predict_dataloader(self):
+        return self.val_loader 
+    
     def test_dataloader(self):
         return self.test_loader                                          
 
