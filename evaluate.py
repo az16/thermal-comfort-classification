@@ -58,7 +58,8 @@ if __name__ == "__main__":
             result = trainer.predict(model=module)
             pred = [torch.argmax(p).item() for (p,g) in result]
             gt = [torch.argmax(g).item() for (p,g) in result]
-
+            np.save("pred.npy", pred)
+            np.save("gt.npy", gt)
             ConfusionMatrixDisplay.from_predictions(gt, pred)
             plt.savefig(cm_file.as_posix())
 
