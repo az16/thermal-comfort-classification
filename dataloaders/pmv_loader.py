@@ -1,4 +1,4 @@
-from utils import narrow_labels
+from utils import narrow_labels, class7To3, class7To2,label2idx
 from path import Path
 from utils import *
 import pandas as pd 
@@ -6,6 +6,7 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from sklearn.metrics import ConfusionMatrixDisplay
 
 
 class PMV_Results():
@@ -39,7 +40,7 @@ class PMV_Results():
         print("Adding to dataframe..")
         
         #contiuous preds
-        self.df["PMV"] = pmv_calc(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["Ambient_Temperature"], self.df["Ambient_Humidity"]) #calls pythermalcomfort api to calculate PMV based on ASHRAE standard
+        self.df["PMV"] = pmv(self.df["Radiation-Temp"], self.df["Clothing-Level"], self.df["Ambient_Temperature"], self.df["Ambient_Humidity"]) #calls pythermalcomfort api to calculate PMV based on ASHRAE standard
         #round preds to compare for accuracy 
         self.df["PMV_rounded"] = np.round(self.df["PMV"], 0).astype(np.int64)
         
@@ -47,40 +48,75 @@ class PMV_Results():
 
         #clf_tree(self.df["PMV_rounded"].values, self.df["Label"].values, [-3, -2, -1, 0, 1, 2, 3], "PMV_cm") #Use this to generate a confusion matrix
         print("Computing accuracy..")
-        correct_7 = np.sum(self.df["PMV_rounded"].values==self.df["Label"].values)
-        correct_3 = np.sum(reduce_scale(self.df, "PMV_rounded", scale=3)==reduce_scale(self.df, "Label", scale=3))
-        correct_2 = np.sum(reduce_scale(self.df, "PMV_rounded", scale=2)==reduce_scale(self.df, "Label", scale=2))
+        gt   = np.array([v for v in self.df["Label"].values], dtype=int)
+        pred = np.array([v for v in self.df["PMV_rounded"].values], dtype=int)
+                
+        gt3 = class7To3(gt + 3)
+        gt2 = class7To2(gt + 3)
+
+        pred3 = class7To3(pred + 3)
+        pred2 = class7To2(pred + 3)
+
         total = self.df.shape[0]
+
+        correct_7 = np.sum(gt == pred)
+        correct_3 = np.sum(gt3 == pred3)
+        correct_2 = np.sum(gt2 == pred2)
+
 
         self.pmv_accuracy_7 = correct_7/total
         self.pmv_accuracy_3 = correct_3/total
         self.pmv_accuracy_2 = correct_2/total
 
-def reduce_scale(df, column, scale=2):
+        fig, ax = plt.subplots()
+        ax.spines["left"].set_color("white")
+        ax.spines["right"].set_color("white")
+        ax.spines["top"].set_color("white")
+        ax.spines["bottom"].set_color("white")
+        ConfusionMatrixDisplay.from_predictions(gt, pred, normalize='true', display_labels=["cold", "cool", "slightly cool", "comfortable", "slightly warm", "warm", "hot"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+        plt.savefig("pmv_cm.pdf",bbox_inches='tight', pad_inches=0)
+
+        fig, ax = plt.subplots()
+        ax.spines["left"].set_color("white")
+        ax.spines["right"].set_color("white")
+        ax.spines["top"].set_color("white")
+        ax.spines["bottom"].set_color("white")
+        ConfusionMatrixDisplay.from_predictions(gt3, pred3, normalize='true', display_labels=["cool", "comfortable", "warm"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+        plt.savefig("pmv_cm_3.pdf",bbox_inches='tight', pad_inches=0)
+
+        fig, ax = plt.subplots()
+        ax.spines["left"].set_color("white")
+        ax.spines["right"].set_color("white")
+        ax.spines["top"].set_color("white")
+        ax.spines["bottom"].set_color("white")
+        ConfusionMatrixDisplay.from_predictions(gt2, pred2, normalize='true', display_labels=["uncomfortable","comfortable"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+        plt.savefig("pmv_cm_2.pdf",bbox_inches='tight', pad_inches=0)
+
+def reduce_scale(values, scale=2):
+    rescaled = np.zeros_like(values)
     if scale==2:
         #print("2-Point scale transformation.")
-        #df.loc[(df[column] == 0), column] = 0
-        #df.loc[(df[column] == 1), column] = 1
-        df.loc[(df[column] == -1), column] = 1
-        df.loc[(df[column] == -3), column] = 1
-        df.loc[(df[column] == -2), column] = 1
-        df.loc[(df[column] == 2), column] = 1
-        df.loc[(df[column] == 3), column] = 1
-        print("{0}: all 1 {1}, all 0 {2}".format(column, (df[column].values==1).all(), (df[column].values==0).all()))
-        return df[column].values
+        #df.loc[(df["PMV_rounded"] == 0), "PMV_rounded"] = 0
+        rescaled[values ==  1] = 1
+        rescaled[values == -1] = 1
+        rescaled[values == -3] = 1
+        rescaled[values == -2] = 1
+        rescaled[values ==  2] = 1
+        rescaled[values ==  3] = 1
+       
+        return rescaled
     elif scale==3:
         #print("3-Point scale transformation.")
 
-        df.loc[(df[column] == -1), column] = 0
-        df.loc[(df[column] == -3),column] = -1
-        df.loc[(df[column] == -2), column] = -1
-        #df.loc[(df[column] == 0), column] = 0
-        df.loc[(df[column] == 1), column] = 0
-        df.loc[(df[column] == 2), column] = 1
-        df.loc[(df[column] == 3), column] = 1
-        print("{0}: all 1 {1}, all 0 {2}".format(column, (df[column].values==1).all(), (df[column].values==0).all()))
-        return df[column].values
-    return df[column].values
+        rescaled[values == -1] = 0  #  
+        rescaled[values == -3] = -1 # 0
+        rescaled[values == -2] = -1 #
+        rescaled[values ==  0] = 0  #
+        rescaled[values ==  1] = 0  #
+        rescaled[values ==  2] = 1  #
+        rescaled[values ==  3] = 1  #
+        return rescaled
+    raise ValueError(scale)
    
 def clf_tree(x,y,label_names, name):
     """

@@ -572,10 +572,7 @@ def label2idx(label, scale=7):
     if scale == 2: idx = [0.0,1.0]
     elif scale == 3: idx = [-1.0,0.0,1.0]
     
-    try:
-        return np.array(float(idx.index(label)))
-    except:
-        return np.array(label)
+    return idx.index(label)
 
 def idx2label(idx):
     label = torch.clone(idx)
