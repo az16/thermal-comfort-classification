@@ -715,13 +715,23 @@ def class2order(c):
     return order_rep.to(c)
 
 def class7To3(v):
+    numpy = False
+    if isinstance(v, np.ndarray):
+        numpy = True
+        v = torch.from_numpy(v)
     vec = torch.clone(v)
     vec[vec<=2] = 0
     vec[vec==3] = 1
     vec[vec>=4] = 2
+    if numpy:
+        vec = vec.numpy()
     return vec
 
 def class7To2(v):
+    numpy = False
+    if isinstance(v, np.ndarray):
+        numpy = True
+        v = torch.from_numpy(v)
     vec = torch.clone(v)
     vec[vec == 0] = 0
     vec[vec == 1] = 0
@@ -730,4 +740,6 @@ def class7To2(v):
     vec[vec == 4] = 1
     vec[vec == 5] = 0
     vec[vec == 6] = 0
+    if numpy:
+        vec = vec.numpy()
     return vec

@@ -8,6 +8,7 @@ from sklearn.pipeline import make_pipeline
 from argparse import ArgumentParser
 from network.learning_models import RandomForest
 from dataloaders.sklearn_dataloader import TC_Dataloader
+from dataloaders.ashrae import ASHRAE_Dataset
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, RocCurveDisplay
@@ -18,6 +19,8 @@ from random import randint
 from dataloaders.utils import feature_permutations
 from sklearn.inspection import permutation_importance
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay
 
 
 def clf_tree(x,y,label_names, name):
@@ -195,7 +198,7 @@ def downsampling_selection(param_grid, limit=30):
     print("Best performance: {0}".format(max))
     print("Best sampling rate: {0}".format(best_sampling_rate))
     
-def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp']):
+def fit_random_forest(train="thermal_comfort", eval="thermal_comfort"):
     """
         Given a set of input features this method loads the necessary training data and fits a random forest classifier.
     
@@ -204,22 +207,47 @@ def fit_random_forest(mask=['Ambient_Humidity', 'Ambient_Temperature', 'Radiatio
             mask (list, optional): the features to used. Defaults to ['Ambient_Humidity', 'Ambient_Temperature', 'Radiation-Temp'].
     """
     model = RandomForest(cv=False)#RandomForest(cv=False)
-    dataset = TC_Dataloader(full=True) 
-    X, Y = dataset.splits(mask=mask)
+    if train == "thermal_comfort":
+        train_dataset = TC_Dataloader(by_file=True, cols=["Wrist_Skin_Temperature","Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
+    elif train == "ashrae":
+        train_dataset = ASHRAE_Dataset(path="H:/data/ASHRAE", split="all", cols=[49,30,40,14], scale=7)
+    if eval == "thermal_comfort":
+        eval_dataset = TC_Dataloader(by_file=True, cols=["Wrist_Skin_Temperature","Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
+    elif eval == "ashrae":
+        eval_dataset = ASHRAE_Dataset(path="H:/data/ASHRAE", split="all", cols=[49,30,40,14], scale=7)
     
-    #print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
-    #model.fit(train_X,train_Y)
-    #preds = model.predict(val_X)
-    
-    val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
-    
-    clf_tree(val_preds, Y, labels, "Test_x_Point")
-    print("Top 0 accuracy: {0}".format(accuracy_score(val_preds, Y)))
-    # feature_importance_imp = model.feature_importances()
-    # feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
-    # visualize_feature_importance(feature_importance_imp, dataset.independent, i="impurity_based")
-    # visualize_feature_importance(feature_importance_perm, dataset.independent, i="permutation_based")
+    train_X, train_Y, _, _, _, _ = train_dataset.splits()
+    _, _, val_X, val_Y, _, _ = eval_dataset.splits()
 
+    train_X= np.asarray(train_X, dtype=np.float32)
+    train_Y= np.asarray(train_Y, dtype=int)
+    val_X= np.asarray(val_X, dtype=np.float32)
+    val_Y= np.asarray(val_Y, dtype=int)
+
+    #print(X.shape)
+    #print(np.mean(cross_val_score(model.rf, X,Y, cv=10, verbose=3)))
+    model.fit(train_X,train_Y)
+    preds = model.predict(val_X)
+    #print(val_Y)
+    #roc = roc_auc_score(val_Y, model.rf.predict_proba(val_X), multi_class='ovr')
+    #print("ROC score: {0}".format(roc))
+    #val_preds = cross_val_predict(model.rf, X, Y, cv=10, verbose=3)
+    #print(len(val_preds))
+    #print(val_preds)
+    #clf_tree(val_preds, Y, [0,1], "Test_x_Point")
+    #print("Top 0 accuracy: {0}".format(accuracy_score(preds, val_Y)))
+    # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
+    # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
+    feature_importance_imp = model.feature_importances()
+    feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
+    visualize_feature_importance(feature_importance_imp, eval_dataset.independent, i="impurity_based")
+    visualize_feature_importance(feature_importance_perm, eval_dataset.independent, i="permutation_based")
+    # RocCurveDisplay.from_estimator(model.rf, val_X, val_Y)
+    # plt.show()
+    #print(classification_report(val_Y, val_preds))
+    #print("MAE for validation: {0}".format(mean_absolute_error(val_preds, val_Y)))
+    np.save("rf_pred.npy", preds)
+    np.save("rf_gt.npy", val_Y)
 
 def sk_cross_validate():
     """
@@ -233,13 +261,18 @@ def sk_cross_validate():
             
 
 if __name__ == "__main__":
-    
+    import torch
+    from torchmetrics import Accuracy
+    from dataloaders.utils import label2idx, class7To2, class7To3
     
     parser = ArgumentParser('Trains thermal comfort estimation models')
     parser.add_argument('--estimators', default=50, type=int, help='Number of estimators.')
     parser.add_argument('--depth', default=12, type=int, help='Max depth for tree descend.')
     parser.add_argument('--module', default='', help='The network module to be used for training')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
+    parser.add_argument('--train', default="thermal_comfort")
+    parser.add_argument('--eval', default="thermal_comfort")
+    
     
     args = parser.parse_args()
     
@@ -280,7 +313,58 @@ if __name__ == "__main__":
     #feature_selection(in_features=in_features)#, test=[["Ambient_Temperature","Ambient_Humidity","Radiation-Temp"]])
     #sk_feature_selection()
     #grid_search(params_grid)
-    fit_random_forest() #fit random forest classifier using the cross validation function defined by sklearn
+    #fit_random_forest(train=args.train, eval=args.eval)
+    #downsampling_selection(params_grid)
+    #fit_random_forest()
+    #cross_validate_local(x_t, y_t, x_v, y_v, feature_names=dataset.independent)
+    #sk_cross_validate()
+
+    accuracy = Accuracy(num_classes=7)
+    accuracy3 = Accuracy(num_classes=3)
+    accuracy2 = Accuracy(num_classes=2)
+
+    preds = np.load("rf_pred.npy")
+    gt = np.load("rf_gt.npy")
+
+    gt = np.array([label2idx(v) for v in gt], dtype=int)
+    preds = np.array([label2idx(v) for v in preds], dtype=int)
+
+    fig, ax = plt.subplots()
+            
+    ax.spines["left"].set_color("white")
+    ax.spines["right"].set_color("white")
+    ax.spines["top"].set_color("white")
+    ax.spines["bottom"].set_color("white")   
     
+    ConfusionMatrixDisplay.from_predictions(gt, preds, normalize='true', display_labels=["cold", "cool", "slightly cool", "comfortable", "slightly warm", "warm", "hot"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+    plt.savefig("rf_cm.pdf",bbox_inches='tight', pad_inches=0)
+
     
-    
+    fig, ax = plt.subplots()
+            
+    ax.spines["left"].set_color("white")
+    ax.spines["right"].set_color("white")
+    ax.spines["top"].set_color("white")
+    ax.spines["bottom"].set_color("white")
+    ConfusionMatrixDisplay.from_predictions(class7To3(gt), class7To3(preds), normalize='true', display_labels=["cool", "comfortable", "warm"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+    plt.savefig("rf_3_cm.pdf",bbox_inches='tight', pad_inches=0)
+
+    fig, ax = plt.subplots()
+            
+    ax.spines["left"].set_color("white")
+    ax.spines["right"].set_color("white")
+    ax.spines["top"].set_color("white")
+    ax.spines["bottom"].set_color("white")
+    ConfusionMatrixDisplay.from_predictions(class7To2(gt), class7To2(preds), normalize='true', display_labels=["uncomfortable", "comfortable"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+    plt.savefig("rf_2_cm.pdf",bbox_inches='tight', pad_inches=0)
+
+    gt = torch.from_numpy(gt)
+    preds = torch.from_numpy(preds)
+
+    acc = accuracy(preds, gt)
+    acc3 = accuracy3(class7To3(preds), class7To3(gt))
+    acc2 = accuracy2(class7To2(preds), class7To2(gt))
+
+    print("Accuracy: {:.1f}\%".format(acc.item() * 100))
+    print("Accuracy3: {:.1f}\%".format(acc3.item() * 100))
+    print("Accuracy2: {:.1f}\%".format(acc2.item() * 100))

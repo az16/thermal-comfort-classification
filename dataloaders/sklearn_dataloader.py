@@ -50,7 +50,7 @@ class TC_Dataloader():
                                                                                                         "Wrist_Skin_Temperature",
                                                                                                         "Heart_Rate",
                                                                                                         "GSR",
-                                                                                                        "Ambient_Humidity",]):
+                                                                                                        "Ambient_Humidity"]):
         self.columns = cols
         self.columns.append("Label")
         self.independent = cols[:-1]

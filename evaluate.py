@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from pathlib import Path
 import json
+from dataloaders.utils import class7To2, class7To3, header
 
 if __name__ == "__main__":
     import numpy as np
@@ -16,7 +17,9 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt', required=True)
     parser.add_argument('--path', required=True)
     parser.add_argument('--module', required=True)
+    parser.add_argument('--sort_table', action='store_true')
     parser.add_argument('--overwrite_valid', action='store_true')
+    parser.add_argument('--overwrite_cm', action='store_true')
 
     args = parser.parse_args()
 
@@ -36,41 +39,77 @@ if __name__ == "__main__":
     valid_files = []
     trainer = pl.Trainer(gpus=-1)
     for i, ckpt in enumerate(checkpoints):
-        #mid = "+".join([header[int(c)] for c in torch.load(ckpt)["hyper_parameters"]['cols'].replace("[", "").replace("]", "").split(",")])
-        #target = Path(ckpt).parents[2]/mid
+        mid = "+".join([header[int(c)] for c in torch.load(ckpt)["hyper_parameters"]['cols'].replace("[", "").replace("]", "").split(",")])
+        target = Path(ckpt).parents[2]/mid
         #new_path = Path(ckpt).parents[1].rename(target)
 
         #ckpt = (new_path/"checkpoints"/Path(ckpt).name).as_posix()
         val_file = Path(ckpt).parent/"val.json"
         cm_file = Path(ckpt).parent/"cm.pdf"
+        pred_file = Path(ckpt).parent/"preds.npy"
+        gt_file = Path(ckpt).parent/"gt.npy"
         valid_files.append(val_file)
         
-        if all([val_file.exists(), cm_file.exists()]) and not args.overwrite_valid: continue
-        print("Evaluating ckpt: ", ckpt)
-        module = Module.load_from_checkpoint(ckpt, scale=7, path=args.path, dataset="thermal_comfort")
-
-        if ~val_file.exists() or args.overwrite_valid:
+        if all([val_file.exists(), cm_file.exists()]) and not args.overwrite_valid and not args.overwrite_cm: continue
+        module = None
+        if not val_file.exists() or args.overwrite_valid:
+            print("Validating ckpt: ", ckpt)
+            module = Module.load_from_checkpoint(ckpt, scale=7, path=args.path, dataset="thermal_comfort")
             val_result = trainer.validate(model=module)
             with open(val_file.as_posix(), "w") as jsonfile:
                 json.dump(val_result, jsonfile, indent=4)
         
-        if not cm_file.exists():
-            result = trainer.predict(model=module)
-            pred = [torch.argmax(p).item() for (p,g) in result]
-            gt = [torch.argmax(g).item() for (p,g) in result]
-            np.save("pred.npy", pred)
-            np.save("gt.npy", gt)
-            ConfusionMatrixDisplay.from_predictions(gt, pred)
-            plt.savefig(cm_file.as_posix())
+        if not cm_file.exists() or args.overwrite_cm:
+            print("Create Confusion Matrix for ckpt: ", ckpt)
+            if not pred_file.exists():
+                if module is None:
+                    module = Module.load_from_checkpoint(ckpt, scale=7, path=args.path, dataset="thermal_comfort")
+                result = trainer.predict(model=module)
+                pred = np.array([torch.argmax(p).item() for (p,_) in result], dtype=int)
+                gt   = np.array([torch.argmax(g).item() for (_,g) in result], dtype=int)
 
-    """
+                np.save(pred_file.as_posix(), pred)
+                np.save(gt_file.as_posix(), gt)
+            else:
+                pred = np.load(pred_file.as_posix())
+                gt   = np.load(gt_file.as_posix())
+
+            fig, ax = plt.subplots()
+            ax.spines["left"].set_color("white")
+            ax.spines["right"].set_color("white")
+            ax.spines["top"].set_color("white")
+            ax.spines["bottom"].set_color("white")
+            ConfusionMatrixDisplay.from_predictions(gt, pred, normalize='true', display_labels=["cold", "cool", "slightly cool", "comfortable", "slightly warm", "warm", "hot"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+            plt.savefig(cm_file.as_posix(),bbox_inches='tight', pad_inches=0)
+
+            fig, ax = plt.subplots()
+            ax.spines["left"].set_color("white")
+            ax.spines["right"].set_color("white")
+            ax.spines["top"].set_color("white")
+            ax.spines["bottom"].set_color("white")
+            ConfusionMatrixDisplay.from_predictions(class7To3(gt), class7To3(pred), normalize='true', display_labels=["cool", "comfortable", "warm"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+            plt.savefig(cm_file.as_posix().replace("cm.pdf", "cm3.pdf"),bbox_inches='tight', pad_inches=0)
+
+            fig, ax = plt.subplots()
+            ax.spines["left"].set_color("white")
+            ax.spines["right"].set_color("white")
+            ax.spines["top"].set_color("white")
+            ax.spines["bottom"].set_color("white")
+            ConfusionMatrixDisplay.from_predictions(class7To2(gt), class7To2(pred), normalize='true', display_labels=["uncomfortable","comfortable"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
+            plt.savefig(cm_file.as_posix().replace("cm.pdf", "cm2.pdf"),bbox_inches='tight', pad_inches=0)
+
+
+    
     data = {}
     for valid_file in valid_files:
         with open(valid_file, "r") as jsonfile:
             vdata = json.load(jsonfile)[0]
             data[valid_file.parents[1].name] = vdata
-    """
-    """
+    
+    items = data.items()
+    if args.sort_table:
+        items = sorted(data.items(), key=lambda x:x[1]['val_accuracy'], reverse=True)
+    
     table = ["{GSR} & {AT} & {AH} & {RT} & {WS} & {val_acc:.1f}\% & {val_3_acc:.1f}\% & {val_2_acc:.1f}\% & {mse:.3f} & {l1:.3f}\\\\".format(
         GSR="X" if "GSR" in key else "", 
         AT="X" if "Ambient_Temperature" in key else "",
@@ -82,13 +121,13 @@ if __name__ == "__main__":
         val_2_acc=100*round(value['val_accuracy2'],3),
         mse      =    round(value['val_mse'],3),
         l1       =    round(value["val_l1"],3)
-        ) for (key, value) in sorted(data.items(), key=lambda x:x[1]['val_accuracy'], reverse=True)]
+        ) for (key, value) in items]
 
     for row in table:
         print(row)
-    """
     
-    """
+    
+    
     mean_val_acc  = np.mean([v['val_accuracy'] for v in data.values()])
     mean_val_acc3 = np.mean([v['val_accuracy3'] for v in data.values()])
     mean_val_acc2 = np.mean([v['val_accuracy2'] for v in data.values()])
@@ -120,4 +159,4 @@ if __name__ == "__main__":
         )
 
     print(table)
-    """
+    

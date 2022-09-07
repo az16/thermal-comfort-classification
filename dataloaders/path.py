@@ -5,7 +5,8 @@ class Path(object):
             #return '/mnt/hdd/albin_zeqiri/ma/dataset/logs/'
             #return 'C:/Users/mi/Documents/Dataset/out/'
             #return "D:/csv-merger/out/"
-            return "/mnt/hdd/sebastian/chi2023/dataset/"
+            #return "/mnt/hdd/sebastian/chi2023/dataset/"
+            return "H:/data/ThermalDataset/"
         else:
             print('Database {} not available.'.format(database))
             raise NotImplementedError

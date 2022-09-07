@@ -61,20 +61,21 @@ class HEADER(Enum):
     HUMIDITY_SENSATION    = 51
 
 N = 31505
-N_TRAIN = 30000
-N_VALID = 1505
+N_TRAIN = int(N // 1.25)
+N_VALID = N - N_TRAIN
 
-class ASHRAE_Dataloader(Dataset):
-    def __init__(self, path, cols, scale, split, data_augmentation=False, *args, **kwargs) -> None:
-        super().__init__()
+class ASHRAE_Dataset():
+    def __init__(self, path, cols, scale, split):
         self.split = split
         self.path = Path(path)
         self.cols = [HEADER(c) for c in cols]
         self.scale = scale
-        self.data_augmentation = data_augmentation
         self.load_csv()
         self.preprocess()
         print("Found {} entries for split {}.".format(len(self.data), self.split))
+
+    def splits(self):
+        return self.data[0:N_TRAIN, 0:-1], self.data[0:N_TRAIN, -1], self.data[N_TRAIN:, 0:-1], self.data[N_TRAIN:, -1], None, None
 
     def load_csv(self):
         self.data = []
@@ -100,9 +101,13 @@ class ASHRAE_Dataloader(Dataset):
         elif self.split == "validation":
             self.data = self.data[N_TRAIN:]
         else:
-            self.data = self.data[N_TRAIN:]
+            self.data = self.data
 
-        
+
+class ASHRAE_Dataloader(ASHRAE_Dataset):
+    def __init__(self, path, cols, scale, split, data_augmentation=False, *args, **kwargs) -> None:
+        super().__init__(path, cols, scale, split)
+        self.data_augmentation = data_augmentation
 
     def __len__(self):
         return len(self.data)
@@ -123,5 +128,5 @@ class ASHRAE_Dataloader(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = ASHRAE_Dataloader("H:/data/ASHRAE", [HEADER.RADIANT_TEMPERATURE_C, HEADER.AIR_TEMPERATURE_C, HEADER.RELATIVE_HUMIDITY, HEADER.THERMAL_SENSATION])
-    
+    #dataset = ASHRAE_Dataloader(path="H:/data/ASHRAE", cols=[HEADER.RADIANT_TEMPERATURE_C, HEADER.AIR_TEMPERATURE_C, HEADER.RELATIVE_HUMIDITY, HEADER.THERMAL_SENSATION], scale=7, split="training")
+    dataset = ASHRAE_Dataset(path="H:/data/ASHRAE", cols=[HEADER.RADIANT_TEMPERATURE_C, HEADER.AIR_TEMPERATURE_C, HEADER.RELATIVE_HUMIDITY, HEADER.THERMAL_SENSATION], scale=7, split="training")
