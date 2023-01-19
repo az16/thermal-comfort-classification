@@ -7,7 +7,6 @@ import pytorch_lightning as pl
 from network.learning_models import RNN
 from dataloaders.tc_dataloader import TC_Dataloader
 from dataloaders.ashrae import ASHRAE_Dataloader
-from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
 from dataloaders.utils import order2class, class7To3, class7To2
 from torchmetrics import Accuracy as TopK
@@ -57,9 +56,9 @@ class TC_RNN_Module(pl.LightningModule):
         
         #self.criterion = torch.nn.CrossEntropyLoss()
         self.criterion = torch.nn.MSELoss()
-        self.accuracy = TopK(num_classes=7)
-        self.accuracy_3 = TopK(num_classes=3)
-        self.accuracy_2 = TopK(num_classes=2)
+        self.accuracy = TopK(num_classes=7, task="multiclass")
+        self.accuracy_3 = TopK(num_classes=3, task="multiclass")
+        self.accuracy_2 = TopK(num_classes=2, task="multiclass")
         self.l1 = torch.nn.L1Loss()
         self.mse = torch.nn.MSELoss()
         self.train_preds = []

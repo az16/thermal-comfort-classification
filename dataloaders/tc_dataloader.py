@@ -9,28 +9,28 @@ import numpy as np
 
 # raw data table
 # index     name       
-# 0         timestamp      
-# 1         age       
-# 2         gender
-# 3         weight
-# 4         height
-# 5         bodyfat
-# 6         bodytemp
-# 7         sport
-# 8         meal 
-# 9         tiredness
-# 10        black-globe-temp
-# 11        pce-ambient
-# 12        clothing-level
-# 13        air-velocity
-# 14        metabolic rate
-# 15        emotion
-# 16        emotion-ml
-# 17        rgb paths
-# 17-26     key-points
-# 27,29     bio-signals
-# 30,31     environmental-signals
-# 32        label
+#  0        timestamp      
+#  1        age                             static                                              
+#  2        gender                          static                              
+#  3        weight                          static                              
+#  4        height                          static                              
+#  5        bodyfat                         static                               
+#  6        bodytemp                        dynamic                                
+#  7        sport                           static                             
+#  8        meal                            static                             
+#  9        tiredness                       static   
+# 10        clothing-level                  static                              
+# 11        black-globe-temp                dynamic                                        
+# 12        pce-ambient                     dynamic                                   
+# 13        air-velocity                    Missing!                                      
+# 14        metabolic rate                  static                                      
+# 15        emotion                         -                               
+# 16        emotion-ml                      -                                  
+# 17        rgb paths                       -                                 
+# 18-27     key-points                      -                                  
+# 28-30     bio-signals                     dynamic                                   
+# 31,32     environmental-signals           dynamic                                             
+# 33        label
 
 
 class TC_Dataloader(BaseDataset):
@@ -424,4 +424,5 @@ if __name__ == '__main__':
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in val_indices])
     #    with open("dataloaders/splits/test_indices_{}.txt".format(i), "w") as txtfile:
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in test_indices])
-    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[11,31,32,33])
+    #dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[11,31,32,33])
+    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[6,11,12,28,29,30,31,32,33])

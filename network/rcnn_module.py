@@ -1,11 +1,9 @@
 from multiprocessing import cpu_count
-from metrics import rmse, mae, compute_confusion_matrix, Accuracy
 import numpy as np
 import torch
 import pytorch_lightning as pl
 from network.learning_models import RCNN
 from dataloaders.tc_dataloader import TC_Dataloader
-from dataloaders.pmv_loader import PMV_Results
 from dataloaders.path import *
 from dataloaders.utils import order2class, class7To3, class7To2
 from torchmetrics import Accuracy as TopK
