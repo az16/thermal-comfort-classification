@@ -33,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--sequence_window', type=int, default=0, help="Use thermal comfort dataset sequentially.")
     parser.add_argument('--module', default='', help='The network module to be used for training')
+    parser.add_argument('--project', default="ThermalComfort", help='Name of wandb project')
     parser.add_argument('--version', default=None, help='Log directory name.')
     parser.add_argument('--columns', default=[], help='The number of variables used for training')
     parser.add_argument('--dropout', type=float, default=0.5, help='Model dropout rate')
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     sequence_based = (args.sequence_window > 0)
 
     if args.version and args.wandb and not args.dev:
-        logger = pl.loggers.WandbLogger(project="ThermalComfort", name=args.version)
+        logger = pl.loggers.WandbLogger(project=args.project, name=args.version)
     elif args.version and not args.dev:
         logger = pl.loggers.TensorBoardLogger("tensorboard_logs", name=args.module, version=args.version)
     else:
