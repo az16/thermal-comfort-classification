@@ -33,8 +33,10 @@ if __name__ == "__main__":
     checkpoints = []
     if Path(args.ckpt).is_file():
         checkpoints.append(args.ckpt)
+        parent = Path(args.ckpt).parent
     if Path(args.ckpt).is_dir():
         checkpoints = [ckpt.as_posix() for ckpt in Path(args.ckpt).glob("**/*") if ckpt.suffix == ".ckpt"]
+        parent = Path(args.ckpt)
 
     valid_files = []
     trainer = pl.Trainer(gpus=-1)
@@ -129,7 +131,8 @@ if __name__ == "__main__":
     for row in table:
         print(row)
     
-    
+    with open((parent/"table.tex").as_posix(), "w") as txtfile:
+        txtfile.writelines(table)
     
     mean_val_acc  = np.mean([v['val_accuracy'] for v in data.values()])
     mean_val_acc3 = np.mean([v['val_accuracy3'] for v in data.values()])
