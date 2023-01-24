@@ -110,12 +110,15 @@ if __name__ == "__main__":
     if args.sort_table:
         items = sorted(data.items(), key=lambda x:x[1]['val_accuracy'], reverse=True)
     
-    table = ["{GSR} & {AT} & {AH} & {RT} & {WS} & {val_acc:.1f}\% & {val_3_acc:.1f}\% & {val_2_acc:.1f}\% & {mse:.3f} & {l1:.3f}\\\\".format(
+    table = ["{BT} & {PCE} & {HR} & {GSR} & {AT} & {AH} & {RT} & {WS} & {val_acc:.1f}\% & {val_3_acc:.1f}\% & {val_2_acc:.1f}\% & {mse:.3f} & {l1:.3f}\\\\".format(
         GSR="X" if "GSR" in key else "", 
         AT="X" if "Ambient_Temperature" in key else "",
         AH="X" if "Ambient_Humidity" in key else "",
         RT="X" if "Radiation-Temp" in key else "",
         WS="X" if "Wrist_Skin_Temperature" in key else "",
+        BT="X" if "Bodytemp" in key else "",
+        PCE="X" if "PCE-Ambient-Temp" in key else "",
+        HR="X" if "Heart_Rate" in key else "",
         val_acc  =100*round(value['val_accuracy'], 3),
         val_3_acc=100*round(value['val_accuracy3'],3),
         val_2_acc=100*round(value['val_accuracy2'],3),
