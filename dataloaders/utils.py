@@ -751,15 +751,15 @@ def make_split(directory, output):
     test = 2
     val = 2
     train = N - test - val
-    with open(Path(output)/"training_real.txt", "w") as txtfile:
+    with open(Path(output)/"training_60_real.txt", "w") as txtfile:
         for file in files[0:train]:
             txtfile.write(f"{file.name}\n")
             
-    with open(Path(output)/"validation_real.txt", "w") as txtfile:
+    with open(Path(output)/"validation_60_real.txt", "w") as txtfile:
         for file in files[train:train+val]:
             txtfile.write(f"{file.name}\n")
             
-    with open(Path(output)/"test_real.txt", "w") as txtfile:
+    with open(Path(output)/"test_60_real.txt", "w") as txtfile:
         for file in files[train+val:]:
             txtfile.write(f"{file.name}\n")
     

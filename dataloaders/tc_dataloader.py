@@ -96,7 +96,7 @@ class TC_Dataloader(BaseDataset):
         #find files
         print("Searching for {0} files..".format(self.split))
         file_names =  [] #os.listdir(self.root)
-        split_file = "./dataloaders/splits/{0}_{1}.txt".format(self.split, 60)
+        split_file = "./dataloaders/splits/{0}_{1}_real.txt".format(self.split, 60)
         if not self.run is None:
             split_file = "./dataloaders/splits/{0}_indices_{1}.txt".format(self.split, self.run)
 
