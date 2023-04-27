@@ -11,6 +11,8 @@ import torch
 import numpy as np
 from tqdm import tqdm
 import os 
+from pathlib import Path
+import pandas
 
 
 types = dict({
@@ -740,3 +742,27 @@ def class7To2(v):
     if numpy:
         vec = vec.numpy()
     return vec
+
+def make_split(directory, output):
+    
+    files = [f for f in Path(directory).glob("*.csv") if not "merged" in f.stem]
+    np.random.shuffle(files)
+    N = len(files)
+    test = 2
+    val = 2
+    train = N - test - val
+    with open(Path(output)/"training_real.txt", "w") as txtfile:
+        for file in files[0:train]:
+            txtfile.write(f"{file.name}\n")
+            
+    with open(Path(output)/"validation_real.txt", "w") as txtfile:
+        for file in files[train:train+val]:
+            txtfile.write(f"{file.name}\n")
+            
+    with open(Path(output)/"test_real.txt", "w") as txtfile:
+        for file in files[train+val:]:
+            txtfile.write(f"{file.name}\n")
+    
+    
+if __name__ == '__main__':
+    make_split("H:/data/ThermalDataset", "H:\\projects\\thermal-comfort-classification\\dataloaders\\splits")
