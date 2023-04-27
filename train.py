@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # Manage Random Seed
     if args.seed is None: # Generate random seed if none is given
         args.seed = random.randrange(4294967295) # Make sure it's logged
-    pl.seed_everything(args.seed)
+    pl.utilities.seed.seed_everything(args.seed, workers=True)
     
     # Checkpoint callback to save best model parameters
     callbacks = [pl.callbacks.ModelCheckpoint(
