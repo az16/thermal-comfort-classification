@@ -100,7 +100,8 @@ if __name__ == "__main__":
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
         logger=logger,
-        callbacks=callbacks
+        callbacks=callbacks,
+        deterministic=True # make fix seed reproducable
     )
 
     yaml = args.__dict__
