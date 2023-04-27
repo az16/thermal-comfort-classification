@@ -123,6 +123,7 @@ class TC_Dataloader(BaseDataset):
             frames = [x.drop(x.tail(1000).index) for x in frames]
             self.df = pd.concat(frames)
         else: self.df = pd.concat([pd.DataFrame(pd.read_csv(x, delimiter=";"), columns = self.columns) for x in tqdm(file_names)])#;print(self.df.shape)
+        self.df.dropna(axis=0, inplace=True)
         self.df = narrow_labels(self.df, self.scale)
         if not self.downsample is None:
             # print(self.df.shape)
@@ -390,6 +391,9 @@ class TC_Dataloader(BaseDataset):
             label = label2idx(label, scale = self.scale)
             label = order_representation(label, scale=self.scale)
             label = torch.from_numpy(label)
+            
+        assert not torch.any(torch.isnan(label)), index
+        assert not torch.any(torch.isnan(out)), index
          
         return out.float(), label.float()#.type(torch.LongTensor)
     
@@ -424,5 +428,8 @@ if __name__ == '__main__':
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in val_indices])
     #    with open("dataloaders/splits/test_indices_{}.txt".format(i), "w") as txtfile:
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in test_indices])
-    #dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[11,31,32,33])
-    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[6,11,12,28,29,30,31,32,33])
+    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", cols=[28, 29, 30, 31,32,33])
+    #dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[6,11,12,28,29,30,31,32,33])
+    
+    for (inputs, labels) in dataset:
+        assert not torch.any(inputs==torch.nan), inputs

@@ -175,8 +175,8 @@ class TC_RNN_Module(pl.LightningModule):
         accuracy2 = self.accuracy_2(class7To2(y_hat_class_label), class7To2(y_class_label))
         accuracy3 = self.accuracy_3(class7To3(y_hat_class_label), class7To3(y_class_label))
         
-        #self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
-        #self.log("{}_l1".format(name), l1, prog_bar=True, logger=True)
+        self.log("{}_mse".format(name), mse, prog_bar=True, logger=True)
+        self.log("{}_l1".format(name), l1, prog_bar=True, logger=True)
         self.log("{}_loss".format(name), loss, prog_bar=True, logger=True)
         self.log("{}_accuracy".format(name), accuracy, prog_bar=True, logger=True)
         self.log("{}_accuracy3".format(name), accuracy3, prog_bar=True, logger=True)
