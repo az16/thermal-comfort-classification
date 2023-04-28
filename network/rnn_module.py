@@ -17,7 +17,7 @@ from torchmetrics import Accuracy as TopK
 gpu_mode=False
 # RDM_Net.use_cuda=False
 class TC_RNN_Module(pl.LightningModule):
-    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, forecasting, scale, dataset, *args, **kwargs):
+    def __init__ (self, path, batch_size, learning_rate, worker, metrics, get_sequence_wise, sequence_size, cols, gpus, dropout, hidden, layers, preprocess, augmentation, skip, forecasting, scale, dataset, weight_decay, *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         gpu_mode = not (gpus == 0)
