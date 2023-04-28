@@ -49,6 +49,7 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_path', type=str, required=True, help="Path to dataset.")
     parser.add_argument('--run', type=int, default=None, help="Run index for crossvalidation.")
     parser.add_argument('--dataset', type=str, default="thermal_comfort", help="Run index for crossvalidation.")
+    parser.add_argument('--weight_decay', type=float, default=0, help="Weight decay of optimizer.")
 
     
     args = parser.parse_args()

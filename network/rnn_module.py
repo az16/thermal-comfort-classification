@@ -93,7 +93,7 @@ class TC_RNN_Module(pl.LightningModule):
         """
         train_param = self.model.parameters()
         # Training parameters
-        optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate)
+        optimizer = torch.optim.Adam(train_param, lr=self.hparams.learning_rate, weight_decay=self.hparams.weight_decay)
         scheduler = {
                 'scheduler': torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: np.power(0.9999999, self.global_step)),
                 'interval': 'step',
