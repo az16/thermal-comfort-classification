@@ -208,11 +208,11 @@ def fit_random_forest(train="thermal_comfort", eval="thermal_comfort"):
     """
     model = RandomForest(cv=False)#RandomForest(cv=False)
     if train == "thermal_comfort":
-        train_dataset = TC_Dataloader(by_file=True, cols=["Wrist_Skin_Temperature","Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
+        train_dataset = TC_Dataloader(by_file=True, cols=["Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
     elif train == "ashrae":
         train_dataset = ASHRAE_Dataset(path="H:/data/ASHRAE", split="all", cols=[49,30,40,14], scale=7)
     if eval == "thermal_comfort":
-        eval_dataset = TC_Dataloader(by_file=True, cols=["Wrist_Skin_Temperature","Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
+        eval_dataset = TC_Dataloader(by_file=True, cols=["Ambient_Humidity", "Ambient_Temperature", "Radiation-Temp"]) 
     elif eval == "ashrae":
         eval_dataset = ASHRAE_Dataset(path="H:/data/ASHRAE", split="all", cols=[49,30,40,14], scale=7)
     
@@ -238,10 +238,12 @@ def fit_random_forest(train="thermal_comfort", eval="thermal_comfort"):
     #print("Top 0 accuracy: {0}".format(accuracy_score(preds, val_Y)))
     # print("Top 1 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y)))
     # print("Top 2 accuracy: {0}".format(top_k_accuracy_score(val_preds, val_Y, k=3)))
+    
     feature_importance_imp = model.feature_importances()
     feature_importance_perm = permutation_importance(model.rf, val_X, val_Y, random_state=0)["importances_mean"]
     visualize_feature_importance(feature_importance_imp, eval_dataset.independent, i="impurity_based")
     visualize_feature_importance(feature_importance_perm, eval_dataset.independent, i="permutation_based")
+    
     # RocCurveDisplay.from_estimator(model.rf, val_X, val_Y)
     # plt.show()
     #print(classification_report(val_Y, val_preds))
@@ -313,15 +315,15 @@ if __name__ == "__main__":
     #feature_selection(in_features=in_features)#, test=[["Ambient_Temperature","Ambient_Humidity","Radiation-Temp"]])
     #sk_feature_selection()
     #grid_search(params_grid)
-    #fit_random_forest(train=args.train, eval=args.eval)
+    fit_random_forest(train=args.train, eval=args.eval)
     #downsampling_selection(params_grid)
     #fit_random_forest()
     #cross_validate_local(x_t, y_t, x_v, y_v, feature_names=dataset.independent)
     #sk_cross_validate()
 
-    accuracy = Accuracy(num_classes=7)
-    accuracy3 = Accuracy(num_classes=3)
-    accuracy2 = Accuracy(num_classes=2)
+    accuracy = Accuracy(num_classes=7, task="multiclass")
+    accuracy3 = Accuracy(num_classes=3, task="multiclass")
+    accuracy2 = Accuracy(num_classes=2, task="binary")
 
     preds = np.load("rf_pred.npy")
     gt = np.load("rf_gt.npy")

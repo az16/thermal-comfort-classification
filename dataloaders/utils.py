@@ -99,11 +99,11 @@ header = ["Timestamp",
           "LEye",
           "REar",
           "LEar",
-          "Wrist_Skin_Temperature",
-          "Heart_Rate",
-          "GSR",
-          "Ambient_Temperature",
-          "Ambient_Humidity",
+          "Wrist_Skin_Temperature", # 28
+          "Heart_Rate", # 29
+          "GSR", # 30
+          "Ambient_Temperature", # 31
+          "Ambient_Humidity", # 32
           "Label"]
 
 numeric_safe = [ "Ambient_Temperature","Radiation-Temp", "Ambient_Humidity", "Wrist_Skin_Temperature", "Heart_Rate", "GSR"]#, "Ambient_Humidity","Heart_Rate", "Wrist_Skin_Temperature", "GSR"]
@@ -743,26 +743,42 @@ def class7To2(v):
         vec = vec.numpy()
     return vec
 
-def make_split(directory, output):
+def make_split(directory, output, i):
     
     files = [f for f in Path(directory).glob("*.csv") if not "merged" in f.stem]
     np.random.shuffle(files)
     N = len(files)
-    test = 2
+    test = 0
     val = 2
     train = N - test - val
-    with open(Path(output)/"training_60_real.txt", "w") as txtfile:
+    with open(Path(output)/f"training_{i}_real.txt", "w") as txtfile:
         for file in files[0:train]:
             txtfile.write(f"{file.name}\n")
             
-    with open(Path(output)/"validation_60_real.txt", "w") as txtfile:
+    with open(Path(output)/f"validation_{i}_real.txt", "w") as txtfile:
         for file in files[train:train+val]:
             txtfile.write(f"{file.name}\n")
             
-    with open(Path(output)/"test_60_real.txt", "w") as txtfile:
-        for file in files[train+val:]:
-            txtfile.write(f"{file.name}\n")
+    #with open(Path(output)/"test_60_real.txt", "w") as txtfile:
+    #    for file in files[train+val:]:
+    #        txtfile.write(f"{file.name}\n")
     
     
 if __name__ == '__main__':
-    make_split("H:/data/ThermalDataset", "H:\\projects\\thermal-comfort-classification\\dataloaders\\splits")
+    #for i in range(10):
+    #    make_split("H:/data/ThermalDataset", "H:\\projects\\thermal-comfort-classification\\dataloaders\\splits", i)
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # construct some data like what you have:
+    x = np.random.randn(100, 8)
+    mins = x.min(0)
+    maxes = x.max(0)
+    means = x.mean(0)
+    std = x.std(0)
+
+    # create stacked errorbars:
+    plt.errorbar(np.arange(8), means, std, fmt='ok', lw=3)
+    plt.errorbar(np.arange(8), means, [means - mins, maxes - means],
+                fmt='.k', ecolor='gray', lw=1)
+    plt.xlim(-1, 8)

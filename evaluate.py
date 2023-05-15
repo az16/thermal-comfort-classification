@@ -86,6 +86,7 @@ if __name__ == "__main__":
             ax.spines["right"].set_color("white")
             ax.spines["top"].set_color("white")
             ax.spines["bottom"].set_color("white")
+
             ConfusionMatrixDisplay.from_predictions(gt, pred, normalize='true', display_labels=["cold", "cool", "slightly cool", "comfortable", "slightly warm", "warm", "hot"], cmap=plt.cm.Blues, values_format=".1%", ax=ax, xticks_rotation="vertical")
             plt.savefig(cm_file.as_posix(),bbox_inches='tight', pad_inches=0)
 

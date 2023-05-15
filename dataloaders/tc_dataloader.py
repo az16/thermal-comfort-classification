@@ -95,11 +95,14 @@ class TC_Dataloader(BaseDataset):
         
         #find files
         print("Searching for {0} files..".format(self.split))
-        file_names =  [] #os.listdir(self.root)
-        split_file = "./dataloaders/splits/{0}_{1}_real.txt".format(self.split, 60)
-        if not self.run is None:
-            split_file = "./dataloaders/splits/{0}_indices_{1}.txt".format(self.split, self.run)
+        if self.split == 'all':
+            split_file = "./dataloaders/splits/real_all.txt"
+        else:
+            split_file = "./dataloaders/splits/{0}_{1}_real.txt".format(self.split, 60)
+            if not self.run is None:
+                split_file = "./dataloaders/splits/{0}_indices_{1}.txt".format(self.split, self.run)
 
+        file_names =  [] #os.listdir(self.root)
         with open(split_file) as file:
             lines = file.readlines()
             file_names = [line.rstrip() for line in lines]
@@ -360,7 +363,10 @@ class TC_Dataloader(BaseDataset):
                 if index == limit:
                     limit += 1
         #print(np.array(self.df.iloc[[index], :-1]).dtype)
-        out = torch.from_numpy(np.array(self.df.iloc[[index], :-1]))
+        arr = np.array(self.df.iloc[[index], :-1])
+        arr[arr=="Female"] = 0
+        arr[arr=="Male"] = 1
+        out = torch.from_numpy(arr.astype(float))
         label = torch.from_numpy(label)
         # print(limit)
         # print(limit-self.forecasting < self.__len__())
@@ -428,8 +434,28 @@ if __name__ == '__main__':
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in val_indices])
     #    with open("dataloaders/splits/test_indices_{}.txt".format(i), "w") as txtfile:
     #        txtfile.writelines([all_participants[idx] + "\n" for idx in test_indices])
-    dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", cols=[28, 29, 30, 31,32,33])
+    #dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", cols=[28, 29, 30, 31,32,33])
+    dataset = TC_Dataloader("H:/data/ThermalDataset/", "all", cols=[1, 2, 3, 4, 6, 8, 9, 10, 28, 29, 30, 31,32,33], use_sequence=False)
     #dataset = TC_Dataloader("H:/data/ThermalDataset/", "training", run=11, cols=[6,11,12,28,29,30,31,32,33])
     
-    for (inputs, labels) in dataset:
-        assert not torch.any(inputs==torch.nan), inputs
+    N = len(dataset.columns)
+    values = [[] for _ in range(N)]
+    for (inputs, labels) in tqdm(dataset):
+        inputs = inputs[0].cpu().numpy()
+        for i in range(len(values)-1):
+            if i == 2 and inputs[i] == 0:continue
+            values[i].append(inputs[i])
+        label = torch.argmax(order2class(labels.unsqueeze(0))).item()
+        values[-1].append(label)
+            
+    for i in range(len(values)):
+        wst = values[i]
+        name = dataset.columns[i]
+        if i == 1:
+            wst = np.array(wst).astype(int)
+            print(f"Male {np.sum(wst==1)} Female {np.sum(wst==0)}")
+        else:
+            print(f"{name} {np.mean(wst):0.2f} {np.std(wst):0.2f} {np.min(wst)} {np.max(wst)}")
+            
+    np.save("all_real.npy", np.array(values, dtype=object))
+    data = np.load("all_real.npy", allow_pickle=True)
