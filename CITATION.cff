@@ -1,22 +1,21 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: Colley
-    given-names: Mark
+  - family-names: "Colley"
+    given-names: "Mark"
     orcid: "https://orcid.org/0000-0001-5207-5029"
-  - family-names: Hartwig
-    given-names: Sebastian
-  - family-names: Zeqiri
-    given-names: Albin
-  - family-names: Ropinski
-    given-names: Timo
-  - family-names: Rukzio
-    given-names: Enrico
+  - family-names: "Hartwig"
+    given-names: "Sebastian"
+  - family-names: "Zeqiri"
+    given-names: "Albin"
+  - family-names: "Ropinski"
+    given-names: "Timo"
+  - family-names: "Rukzio"
+    given-names: "Enrico"
 title: "AutoTherm: A Dataset and Benchmark for Thermal Comfort Estimation Indoors and in Vehicles"
 version: 1.0.0
 doi: 10.1145/3678503
 date-released: 2024-09
 publisher: "Association for Computing Machinery"
-type: article
 journal: "Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies"
 url: "https://github.com/az16/thermal-comfort-classification"
