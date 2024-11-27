@@ -17,14 +17,6 @@ doi: 10.1145/3678503
 url: https://doi.org/10.1145/3678503
 date-released: 2024-08
 publisher: "Association for Computing Machinery"
-repository-code: "https://github.com" # Update this with the actual repository URL if applicable.
-abstract: |
-  Thermal comfort inside buildings is a well-studied field where human judgment for thermal comfort is collected and may be used for automatic thermal comfort estimation. However, indoor scenarios are rather static in terms of thermal state changes and, thus, cannot be applied to dynamic conditions, e.g., inside a vehicle. In this work, we present our findings of a gap between building and in-vehicle scenarios regarding thermal comfort estimation. We provide evidence by comparing deep neural classifiers for thermal comfort estimation for indoor and in-vehicle conditions. Further, we introduce a temporal dataset for indoor predictions incorporating 31 input signals and self-labeled user ratings by 18 subjects in a self-built climatic chamber. For in-vehicle scenarios, we acquired a second dataset featuring human judgments from 20 subjects in a BMW 3 Series. Our experimental results indicate superior performance for estimations from time series data over single vector input. Leveraging modern machine learning architectures enables us to recognize human thermal comfort states and estimate future states automatically. We provide details on training a recurrent network-based classifier and perform an initial performance benchmark of the proposed dataset. Ultimately, we compare our collected dataset to publicly available thermal comfort datasets.
-keywords:
-  - Machine Learning
-  - dataset
-  - state recognition
-  - vehicles
 type: article
 journal: "Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies"
 issue: 3
