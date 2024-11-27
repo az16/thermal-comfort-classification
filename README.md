@@ -1,5 +1,17 @@
-# Thermal Comfort Classification
-Pytorch based models for classification of thermal comfort states using a multi-modal data.
+
+<img src="images/teaser_autotherm.jpg"  width="100%" height="100%" align="right">
+
+
+# AutoTherm: A Dataset and Benchmark for Thermal Comfort Estimation Indoors and in Vehicles 
+[IMWUT](https://dl.acm.org/journal/imwut) Paper doi: [10.1145/3678503](https://dl.acm.org/doi/10.1145/3678503)
+
+
+[Mark Colley*](https://scholar.google.de/citations?user=Kt5I7wYAAAAJ&hl=de&oi=ao), [Sebastian Hartwig*](https://scholar.google.de/citations?user=f8EwjvQAAAAJ&hl=de&oi=ao), [Albin Zeqirir](https://scholar.google.de/citations?user=UX-Ub5wAAAAJ&hl=de&oi=ao), [Timo Ropinski](https://scholar.google.de/citations?user=FuY-lbcAAAAJ&hl=de&oi=ao), [Enrico Rukzio](https://scholar.google.de/citations?user=LEu4D5gAAAAJ&hl=de&oi=ao)
+
+
+For the full dataset, see the [HuggingFace page](https://huggingface.co/datasets/kopetri/AutoTherm).
+
+
 
 ## Dataset
 Basic description:
