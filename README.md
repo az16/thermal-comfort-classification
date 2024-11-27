@@ -6,7 +6,7 @@
 [IMWUT](https://dl.acm.org/journal/imwut) Paper doi: [10.1145/3678503](https://dl.acm.org/doi/10.1145/3678503)
 
 
-[Mark Colley*](https://scholar.google.de/citations?user=Kt5I7wYAAAAJ&hl=de&oi=ao), [Sebastian Hartwig*](https://scholar.google.de/citations?user=f8EwjvQAAAAJ&hl=de&oi=ao), [Albin Zeqirir](https://scholar.google.de/citations?user=UX-Ub5wAAAAJ&hl=de&oi=ao), [Timo Ropinski](https://scholar.google.de/citations?user=FuY-lbcAAAAJ&hl=de&oi=ao), [Enrico Rukzio](https://scholar.google.de/citations?user=LEu4D5gAAAAJ&hl=de&oi=ao)
+[Mark Colley*](https://scholar.google.de/citations?user=Kt5I7wYAAAAJ&hl=de&oi=ao), [Sebastian Hartwig*](https://scholar.google.de/citations?user=f8EwjvQAAAAJ&hl=de&oi=ao), [Albin Zeqiri](https://scholar.google.de/citations?user=UX-Ub5wAAAAJ&hl=de&oi=ao), [Timo Ropinski](https://scholar.google.de/citations?user=FuY-lbcAAAAJ&hl=de&oi=ao), [Enrico Rukzio](https://scholar.google.de/citations?user=LEu4D5gAAAAJ&hl=de&oi=ao)
 
 
 For the full dataset, see the [HuggingFace page](https://huggingface.co/datasets/kopetri/AutoTherm).
@@ -45,3 +45,7 @@ Basic description:
 * Cleaning of empty lines
 * Normalization
 * Data augmentation
+
+## Contact Details
+For inquiries, contact [Mark Colley](mailto:m.colley@ucl.ac.uk) or [Albin Zeqiri](mailto:albin.zeqiri@uni-ulm.de)
+
